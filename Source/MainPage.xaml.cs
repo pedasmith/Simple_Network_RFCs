@@ -22,8 +22,11 @@ namespace RFC_Foundational
         {
             DisplayRequestRequestActive(true); // Windows will turn this off automatically.
 
-            var testTask = DaytimeTest_Rfc_867.Test();
-            await testTask;
+            //var testTask = DaytimeTest_Rfc_867.Test();
+            //await testTask;
+
+            int nerror = 0;
+            nerror += TimeServer_Rfc_868.TestCalendar();
         }
 
         static Windows.System.Display.DisplayRequest CurrDisplayRequest = null;

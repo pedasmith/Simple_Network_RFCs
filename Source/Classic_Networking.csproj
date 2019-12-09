@@ -121,6 +121,8 @@
     <Compile Include="RFC_Foundational\DaytimeClient_Rfc_867.cs" />
     <Compile Include="RFC_Foundational\DaytimeServer_Rfc_867.cs" />
     <Compile Include="RFC_Foundational\EchoClient_Rfc_862.cs" />
+    <Compile Include="RFC_Foundational\TimeClient_Rfc_868.cs" />
+    <Compile Include="RFC_Foundational\TimeServer_Rfc_868.cs" />
     <Compile Include="RFC_Foundational_Tests\DaytimeTest_Rfc_867.cs" />
     <Compile Include="RFC_Foundational_Tests\Infrastructure.cs" />
     <Compile Include="RFC_UI_UWP\DaytimeClient_Rfc_867_Control.xaml.cs">
@@ -142,6 +144,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RfcViewerControl.xaml.cs">
       <DependentUpon>RfcViewerControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="RFC_UI_UWP\TimeClient_Rfc_868_Control.xaml.cs">
+      <DependentUpon>TimeClient_Rfc_868_Control.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="RFC_UI_UWP\TimeServer_Rfc_868_Control.xaml.cs">
+      <DependentUpon>TimeServer_Rfc_868_Control.xaml</DependentUpon>
     </Compile>
     <Compile Include="Simplest_Possible_Versions\Simplest_Daytime_Sample_Rfc_867.cs" />
     <Compile Include="Utilities\BufferToString.cs" />
@@ -236,6 +244,14 @@
       <SubType>Designer</SubType>
     </Page>
     <Page Include="RfcViewerControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="RFC_UI_UWP\TimeClient_Rfc_868_Control.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="RFC_UI_UWP\TimeServer_Rfc_868_Control.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

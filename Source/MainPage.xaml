@@ -26,8 +26,12 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
+            <local:TimeServer_Rfc_868_Control Grid.Row="1" />
+            <local:TimeClient_Rfc_868_Control Grid.Row="2" />
+            <!--
             <local:DaytimeServer_Rfc_867_Control Grid.Row="1" />
             <local:DaytimeClient_Rfc_867_Control Grid.Row="2" />
+            -->
             <!--
             <local:EchoServer_Rfc_862_Control Grid.Row="1" />
             <local:EchoClient_Rfc_862_Control Grid.Row="2" />
