@@ -118,32 +118,25 @@ namespace RFC_Foundational
         }
 
         public enum ProtocolType { Tcp, Udp }
-        public async Task<TimeResult> SendAsync(HostName address, string service = "10013", ProtocolType protocolType = ProtocolType.Udp, string data = "")
+        public async Task<TimeResult> SendAsync(HostName address, string service = "10013", ProtocolType protocolType = ProtocolType.Udp)
         {
             switch (protocolType)
             {
                 case ProtocolType.Tcp:
-                    return await SendAsyncTcp(address, service, data);
+                    return await SendAsyncTcp(address, service);
                 case ProtocolType.Udp:
-                    return await SendAsyncUdp(address, service, data);
+                    return await SendAsyncUdp(address, service);
             }
             return TimeResult.MakeFailed(SocketErrorStatus.SocketTypeNotSupported, 0.0);
         }
 
-        private async Task<TimeResult> SendAsyncTcp(HostName address, string service, string data)
+        private async Task<TimeResult> SendAsyncTcp(HostName address, string service)
         {
             var startTime = DateTime.UtcNow;
             try
             {
                 var tcpSocket = new StreamSocket();
                 await tcpSocket.ConnectAsync(address, service);
-                // Everything that's sent will be ignored.
-                if (!string.IsNullOrEmpty(data))
-                {
-                    var dw = new DataWriter(tcpSocket.OutputStream);
-                    dw.WriteString(data);
-                    await dw.StoreAsync();
-                }
                 Stats.NSends++;
 
                 // Now read everything
@@ -207,7 +200,7 @@ namespace RFC_Foundational
             catch (Exception ex)
             {
                 Stats.NExceptions++;
-                Log($"ERROR: Client: sending {data} to {address} exception {ex.Message}");
+                Log($"ERROR: Client: sending to {address} exception {ex.Message}");
                 var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
                 return TimeResult.MakeFailed(ex, delta);
             }
@@ -224,7 +217,7 @@ namespace RFC_Foundational
         /// <summary>
         /// Sends out a query and then waits for the reply. Waiting on a UDP involves waiting for a message to come back in.
         /// </summary>
-        private async Task<TimeResult> SendAsyncUdp(HostName address, string service, string data)
+        private async Task<TimeResult> SendAsyncUdp(HostName address, string service)
         {
             UdpStartTime = DateTime.UtcNow;
             try
@@ -233,23 +226,12 @@ namespace RFC_Foundational
                 await udpSocket.ConnectAsync(address, service);
                 udpSocket.MessageReceived += UdpSocket_MessageReceived;
 
-                if (!string.IsNullOrEmpty(data))
-                {
-                    // A blank string, when written to a data writer, won't actually result in a 
-                    // UDP packet being sent. For the special case of not sending any data,
-                    // use the WriteAsync on the socket's OutputStream directly.
-                    var dw = new DataWriter(udpSocket.OutputStream);
-                    dw.WriteString(data);
-                    await dw.StoreAsync();
-                    Stats.NSends++;
-                }
-                else
-                {
-                    var b = new Windows.Storage.Streams.Buffer(0);
-                    await udpSocket.OutputStream.WriteAsync(b);
-                    Stats.NSends++;
-                }
-                Log(ClientOptions.Verbosity.Verbose, $"Client: UDP: Sent request on local port {udpSocket.Information.LocalPort} request {data}");
+                // this is how to send an empty (blank) UDP datagram
+                var b = new Windows.Storage.Streams.Buffer(0);
+                await udpSocket.OutputStream.WriteAsync(b);
+                Stats.NSends++;
+
+                Log(ClientOptions.Verbosity.Verbose, $"Client: UDP: Sent request on local port {udpSocket.Information.LocalPort}");
 
                 // Wait for an answer
 
@@ -265,7 +247,7 @@ namespace RFC_Foundational
                     currDelay = Math.Min(currDelay * 2, Options.MaxPollLoopInMilliseconds); // Do an exponential backup up to max (10 seconds)
                     if (currTotalDelay >= Options.MaxWaitInMilliseconds)
                     {
-                        Log($"ERROR: Client: reply from {address} took too long (outgoing data={data})");
+                        Log($"ERROR: Client: reply from {address} took too long");
                         var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
                         udpResult = TimeResult.MakeFailed(SocketErrorStatus.ConnectionTimedOut, delta);
                         break;
@@ -276,7 +258,7 @@ namespace RFC_Foundational
             catch (Exception ex)
             {
                 Stats.NExceptions++;
-                Log($"ERROR: Client: sending {data} to {address} exception {ex.Message}");
+                Log($"ERROR: Client: sending to {address} exception {ex.Message}");
                 var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
                 return TimeResult.MakeFailed(ex, delta);
             }
@@ -306,14 +288,17 @@ namespace RFC_Foundational
             sender.Dispose();
         }
 
-        private TimeResult ReadUdp(DataReader dr) //TODO: directly read buffer instead of weirding out the DataReader?
+        private TimeResult ReadUdp(DataReader dr)
         {
             uint count = dr.UnconsumedBufferLength;
-            if (count > 0)
+            if (count >= 4)
             {
-                byte[] buffer = new byte[dr.UnconsumedBufferLength];
-                dr.ReadBytes(buffer);
-                var stringresult = BufferToString.ToString(buffer);
+                var rawdata = dr.ReadUInt32();
+                var result = TimeServer_Rfc_868.TimeConversion.Convert(rawdata);
+
+                // Convert to now
+
+                var stringresult = $"{result.ToString()} raw={rawdata} {rawdata:X}";
                 Log($"{stringresult}"); // Will be printed on the screen.
                 var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
                 return TimeResult.MakeSucceeded(stringresult, delta);

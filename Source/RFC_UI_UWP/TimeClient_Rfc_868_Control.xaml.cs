@@ -32,7 +32,6 @@ namespace RFC_UI_UWP
             {
                 var host = new HostName(uiAddress.Text);
                 var service = uiService.Text;
-                var data = uiData.Text;
                 var ptype = uiProtocolType.IsOn ? TimeClient_Rfc_868.ProtocolType.Udp : TimeClient_Rfc_868.ProtocolType.Tcp; // double-checked; off is TCP.
 
                 if (client == null)
@@ -40,7 +39,7 @@ namespace RFC_UI_UWP
                     client = new TimeClient_Rfc_868();
                     client.LogEvent += Client_LogEvent;
                 }
-                await client.SendAsync(host, service, ptype, data);
+                await client.SendAsync(host, service, ptype);
             }
             catch (Exception ex)
             {

@@ -12,6 +12,49 @@ namespace RFC_Foundational
 {
     public class TimeServer_Rfc_868 : IDisposable
     {
+        public static class TimeConversion
+        {
+            private static DateTimeOffset StartTime = new DateTimeOffset(1900, 1, 1, 0, 0, 0, new TimeSpan(0));
+            public static UInt32 GetNow(DateTimeOffset? time = null)
+            {
+                if (!time.HasValue) time = DateTimeOffset.UtcNow;
+                var delta = time.Value.Subtract(StartTime);
+                return (UInt32)delta.TotalSeconds;
+            }
+
+            public static DateTimeOffset Convert (UInt32 data)
+            {
+                var convert = StartTime.AddSeconds(data);
+                return convert;
+            }
+
+            public static int TestCalendar()
+            {
+                int nerror = 0;
+                // These samples are straight from the RTC
+                nerror += TestCalendarOne("0:00 1-Jan-1970 GMT", 2208988800);
+                nerror += TestCalendarOne("0:00 1-Jan-1976 GMT", 2398291200);
+                nerror += TestCalendarOne("0:00 1-Jan-1980 GMT", 2524521600);
+                nerror += TestCalendarOne("0:00 1-May-1983 GMT", 2629584000);
+
+                return nerror;
+            }
+            private static int TestCalendarOne(string date, UInt32 expected)
+            {
+                int nerror = 0;
+                var dt = DateTimeOffset.Parse(date);
+                var actual = GetNow(dt);
+                if (actual != expected)
+                {
+                    nerror++;
+                    System.Diagnostics.Debug.WriteLine($"TimeServer: Test Calendar: ERROR: ({date}) expected {expected} actual {actual} delta {actual - expected}");
+                }
+
+                return nerror;
+            }
+        }
+
+
         public class ServerOptions
         {
             public enum Verbosity { None, Normal, Verbose }
@@ -181,38 +224,6 @@ namespace RFC_Foundational
             await t;
         }
 
-        private static DateTimeOffset StartTime = new DateTimeOffset(1900, 1, 1, 0, 0, 0, new TimeSpan(0));
-        private static UInt32 GetNow(DateTimeOffset? time = null)
-        {
-            if (!time.HasValue) time = DateTimeOffset.UtcNow;
-            var delta = time.Value.Subtract(StartTime);
-            return (UInt32)delta.TotalSeconds;
-        }
-
-        public static int TestCalendar()
-        {
-            int nerror = 0;
-            // These samples are straight from the RTC
-            nerror += TestCalendarOne("0:00 1-Jan-1970 GMT", 2208988800);
-            nerror += TestCalendarOne("0:00 1-Jan-1976 GMT", 2398291200);
-            nerror += TestCalendarOne("0:00 1-Jan-1980 GMT", 2524521600);
-            nerror += TestCalendarOne("0:00 1-May-1983 GMT", 2629584000);
-
-            return nerror;
-        }
-        private static int TestCalendarOne(string date, UInt32 expected)
-        {
-            int nerror = 0;
-            var dt = DateTimeOffset.Parse(date);
-            var actual = GetNow(dt);
-            if (actual != expected)
-            {
-                nerror++;
-                System.Diagnostics.Debug.WriteLine($"TimeServer: Test Calendar: ERROR: ({date}) expected {expected} actual {actual} delta {actual-expected}");
-            }
-
-            return nerror;
-        }
 
         private async Task TimeAsyncTcp(StreamSocket tcpSocket)
         {
@@ -223,7 +234,7 @@ namespace RFC_Foundational
             //NOTE: here's how to write data using a DataWriter
             //CHANGE: use datawriter
             var dw = new DataWriter(tcpSocket.OutputStream);
-            var now = GetNow();
+            var now = TimeConversion.GetNow();
             dw.WriteUInt32(now);
             await dw.StoreAsync();
 
@@ -251,7 +262,7 @@ namespace RFC_Foundational
             // Step 1 is to send the reply.
             // Step 2 is to read (and discard) all incoming data from the single UDP packet
             //CHANGE: use datawriter
-            var now = GetNow();
+            var now = TimeConversion.GetNow();
             dw.WriteUInt32(now);
             await dw.StoreAsync();
             Interlocked.Increment(ref Stats.NResponses);

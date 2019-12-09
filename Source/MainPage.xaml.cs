@@ -26,7 +26,7 @@ namespace RFC_Foundational
             //await testTask;
 
             int nerror = 0;
-            nerror += TimeServer_Rfc_868.TestCalendar();
+            nerror += TimeServer_Rfc_868.TimeConversion.TestCalendar();
         }
 
         static Windows.System.Display.DisplayRequest CurrDisplayRequest = null;

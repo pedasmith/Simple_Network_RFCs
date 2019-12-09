@@ -28,13 +28,11 @@
             </Grid>
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition Width="auto" />
                 </Grid.ColumnDefinitions>
-                <TextBox Grid.Column="0" Header="Data to send" x:Name="uiData" />
-                <Button Grid.Column="1" Content="Send!" Click="OnSend" VerticalAlignment="Bottom" />
-                <Button Grid.Column="2" Content="Close" Click="OnClose" VerticalAlignment="Bottom" />
+                <Button Grid.Column="0" Content="Send!" Click="OnSend" VerticalAlignment="Bottom" />
+                <Button Grid.Column="1" Content="Close" Click="OnClose" VerticalAlignment="Bottom" />
             </Grid>
         </StackPanel>
         <TextBlock Grid.Row="1">Client Results</TextBlock>
