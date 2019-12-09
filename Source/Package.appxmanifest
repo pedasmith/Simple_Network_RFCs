@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
+  <Identity Name="5e7068fb-1d89-4141-b8ee-4b500cbe4f71" Publisher="CN=pesmith" Version="1.0.0.0" />
+  <mp:PhoneIdentity PhoneProductId="5e7068fb-1d89-4141-b8ee-4b500cbe4f71" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
+  <Properties>
+    <DisplayName>Echo_Rfc_862</DisplayName>
+    <PublisherDisplayName>pesmith</PublisherDisplayName>
+    <Logo>Assets\Icons\StoreLogo.png</Logo>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.0.0" MaxVersionTested="10.0.0.0" />
+  </Dependencies>
+  <Resources>
+    <Resource Language="x-generate" />
+  </Resources>
+  <Applications>
+    <Application Id="App" Executable="$targetnametoken$.exe" EntryPoint="Echo_Rfc_862.App">
+      <uap:VisualElements DisplayName="Classic Networking" Square150x150Logo="Assets\Icons\Square150x150Logo.png" Square44x44Logo="Assets\Icons\Square44x44Logo.png" Description="Implements many classic networking protocols like Echo, Daytime and Quote of the day. Includes foundational classes, testing, and user-interface." BackgroundColor="transparent">
+        <uap:DefaultTile Wide310x150Logo="Assets\Icons\Wide310x150Logo.png" ShortName="ECHO" Square71x71Logo="Assets\Icons\SmallTile.png" Square310x310Logo="Assets\Icons\LargeTile.png">
+          <uap:ShowNameOnTiles>
+            <uap:ShowOn Tile="square150x150Logo" />
+            <uap:ShowOn Tile="wide310x150Logo" />
+            <uap:ShowOn Tile="square310x310Logo" />
+          </uap:ShowNameOnTiles>
+        </uap:DefaultTile>
+        <uap:SplashScreen Image="Assets\Icons\SplashScreen.png" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+  <Capabilities>
+    <Capability Name="privateNetworkClientServer" />
+    <Capability Name="internetClientServer" />
+  </Capabilities>
+</Package>

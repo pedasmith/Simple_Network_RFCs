@@ -1,0 +1,48 @@
+﻿<Page
+    x:Class="RFC_Foundational.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:RFC_UI_UWP"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <Style x:Name="SettingRfc" TargetType="Border">
+            <Setter Property="MaxWidth" Value="650" />
+            <Setter Property="Background" Value="AntiqueWhite" />
+            <Setter Property="Padding" Value="4,4,4,4" />
+            <Setter Property="BorderBrush" Value="Black" />
+            <Setter Property="BorderThickness" Value=".5" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <local:DaytimeServer_Rfc_867_Control Grid.Row="1" />
+            <local:DaytimeClient_Rfc_867_Control Grid.Row="2" />
+            <!--
+            <local:EchoServer_Rfc_862_Control Grid.Row="1" />
+            <local:EchoClient_Rfc_862_Control Grid.Row="2" />
+            -->
+
+            <Border Grid.Row="1" Grid.RowSpan="2" HorizontalAlignment="Right" 
+                    x:Name="uiRfcViewer"
+                    Visibility="Collapsed"
+                    Margin="5,30,5,5"
+                    Style="{StaticResource SettingRfc}"
+                    >
+                <local:RfcViewerControl  />
+            </Border>
+            <Button Grid.Row="1" Content="Show RFC" HorizontalAlignment="Right" VerticalAlignment="Top" Click="OnShowRfc"  />
+        </Grid>
+
+    </Grid>
+</Page>
