@@ -51,5 +51,16 @@ namespace RFC_Foundational
         {
             uiRfcViewer.Visibility = (uiRfcViewer.Visibility == Visibility.Collapsed) ? Visibility.Visible : Visibility.Collapsed;
         }
+
+        private void OnSelectMenu(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        {
+            var select = (args.SelectedItem as FrameworkElement).Tag as string;
+            foreach (var item in uiControls.Children)
+            {
+                var fe = item as FrameworkElement;
+                var visibility = ((fe?.Tag as string) == select) ? Visibility.Visible : Visibility.Collapsed;
+                fe.Visibility = visibility;
+            }
+        }
     }
 }

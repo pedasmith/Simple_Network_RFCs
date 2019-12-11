@@ -23,19 +23,50 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="*" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
-            <local:TimeServer_Rfc_868_Control Grid.Row="1" />
-            <local:TimeClient_Rfc_868_Control Grid.Row="2" />
-            <!--
-            <local:DaytimeServer_Rfc_867_Control Grid.Row="1" />
-            <local:DaytimeClient_Rfc_867_Control Grid.Row="2" />
-            -->
-            <!--
-            <local:EchoServer_Rfc_862_Control Grid.Row="1" />
-            <local:EchoClient_Rfc_862_Control Grid.Row="2" />
-            -->
+            <NavigationView Grid.Row="1"
+                            PaneDisplayMode="Left" IsBackButtonVisible="Collapsed"
+                            SelectionChanged="OnSelectMenu">
+                <NavigationView.MenuItems>
+                    <NavigationViewItem Content="Daytime (RFC 867)" Tag="Rfc_867" />
+                    <NavigationViewItem Content="ECHO (RFC 862)" Tag="Rfc_862" />
+                    <NavigationViewItem Content="Time (RFC 868)" Tag="Rfc_868" />
+                </NavigationView.MenuItems>
+                <Grid VerticalAlignment="Stretch" x:Name="uiControls">
+                    <Grid Tag="Rfc_862" Visibility="Visible">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock>ECHO (RFC 862)</TextBlock>
+                        <local:EchoServer_Rfc_862_Control Grid.Row="1" />
+                        <local:EchoClient_Rfc_862_Control Grid.Row="2" />
+                    </Grid>
+                    <Grid Tag="Rfc_867" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock>DAYTIME (RFC 867)</TextBlock>
+                        <local:DaytimeServer_Rfc_867_Control Grid.Row="1" />
+                        <local:DaytimeClient_Rfc_867_Control Grid.Row="2" />
+                    </Grid>
+                    <Grid Tag="Rfc_868" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock>TIME (RFC 868)</TextBlock>
+                        <local:TimeServer_Rfc_868_Control Grid.Row="1" />
+                        <local:TimeClient_Rfc_868_Control Grid.Row="2" />
+                    </Grid>
+                </Grid>
+            </NavigationView>
 
             <Border Grid.Row="1" Grid.RowSpan="2" HorizontalAlignment="Right" 
                     x:Name="uiRfcViewer"
