@@ -216,6 +216,11 @@ namespace RFC_Foundational
             }
         }
 
+        /// <summary>
+        /// Called whenever a new TCP connection is made to the server.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private async void Listener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
             Stats.NConnections++;

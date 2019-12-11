@@ -141,61 +141,16 @@ namespace RFC_Foundational
 
                 // Now read everything
                 var s = tcpSocket.InputStream;
-                var buffer = new Windows.Storage.Streams.Buffer(2048);
-
-                string stringresult = "";
-                var keepGoing = true;
-                while (keepGoing)
+                var dr = new DataReader(s);
+                var nbytes = await dr.LoadAsync(4); // Always gets 4 bytes
+                if (nbytes >= 4)
                 {
-                    try
-                    {
-                        var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
-                        /* This is the syntax that the editor will suggest. There's a 
-                         * much simpler syntax (below) that's syntactic sugar over this.
-                        read.Progress = new AsyncOperationProgressHandler<IBuffer, uint>(
-                            (operation, progress) =>
-                            {
-                                var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
-                                Log(ClientOptions.Verbosity.Verbose, $"DBG: Time Progress count={progress} status={operation.Status} errorcode={err}");
-                            });
-                        */
-                        read.Progress = (operation, progress) =>
-                        {
-                            var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
-                            Log(ClientOptions.Verbosity.Verbose, $"DBG: Time Progress count={progress} status={operation.Status} errorcode={err}");
-                        };
-                        var result = await read;
-                        if (result.Length != 0)
-                        {
-                            var partialresult = BufferToString.ToString(result);
-                            stringresult += partialresult;
-                            Log($"{stringresult}"); // This will be printed on the user's screen.
-                        }
-                        else
-                        {
-                            keepGoing = false;
-                            Log(ClientOptions.Verbosity.Verbose, $"Read completed with zero bytes; closing");
-                        }
-                    }
-                    catch (Exception ex2)
-                    {
-                        keepGoing = false;
-                        Stats.NExceptions++;
-                        Log($"EXCEPTION while reading: {ex2.Message} {ex2.HResult:X}");
-
-                        var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
-                        return TimeResult.MakeFailed(ex2, faildelta);
-                    }
+                    var retval = ReadDataReader(dr);
+                    return retval;
                 }
 
                 var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
-                return TimeResult.MakeSucceeded(stringresult, delta);
-
-                //var dr = new DataReader(tcpSocket.InputStream);
-                //dr.InputStreamOptions = InputStreamOptions.Partial;
-                //ReadTask = ReadAsync(dr, DataReaderType.Stream);
-                //tcpSocket.Dispose();
-                //tcpSocket = null;
+                return TimeResult.MakeFailed(SocketErrorStatus.NoDataRecordOfRequestedType, delta);
             }
             catch (Exception ex)
             {
@@ -270,7 +225,7 @@ namespace RFC_Foundational
             try
             {
                 var dr = args.GetDataReader();
-                var udpResult = ReadUdp(dr);
+                var udpResult = ReadDataReader(dr);
                 UdpResults.TryAdd(sender.Information.LocalPort, udpResult);
             }
             catch (Exception ex)
@@ -288,7 +243,7 @@ namespace RFC_Foundational
             sender.Dispose();
         }
 
-        private TimeResult ReadUdp(DataReader dr)
+        private TimeResult ReadDataReader(DataReader dr)
         {
             uint count = dr.UnconsumedBufferLength;
             if (count >= 4)

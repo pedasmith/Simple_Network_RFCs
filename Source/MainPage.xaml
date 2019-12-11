@@ -74,7 +74,7 @@
                     Margin="5,30,5,5"
                     Style="{StaticResource SettingRfc}"
                     >
-                <local:RfcViewerControl  />
+                <local:RfcViewerControl x:Name="uiRfcViewerControl"  />
             </Border>
             <Button Grid.Row="1" Content="Show RFC" HorizontalAlignment="Right" VerticalAlignment="Top" Click="OnShowRfc"  />
         </Grid>

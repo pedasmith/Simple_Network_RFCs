@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
@@ -20,14 +21,20 @@ namespace RFC_UI_UWP
 {
     public sealed partial class RfcViewerControl : UserControl
     {
-        public string RfcName { get; set; } = "rfc862.txt";
+        private string RfcName { get; set; } = "rfc862.txt";
         public RfcViewerControl()
         {
             this.InitializeComponent();
             this.Loaded += RfcViewerControl_Loaded;
         }
+        public async Task SetContentsTitle(string title, string rfcName)
+        {
+            uiTitle.Text = title;
+            RfcName = rfcName;
+            await ReloadRfcAsync();
+        }
 
-        private async void RfcViewerControl_Loaded(object sender, RoutedEventArgs e)
+        public async Task ReloadRfcAsync()
         {
             try
             {
@@ -39,7 +46,7 @@ namespace RFC_UI_UWP
                 var files = await dir.GetFilesAsync();
                 foreach (var file in files)
                 {
-                    if (file.Name.Contains (RfcName))
+                    if (file.Name.Contains(RfcName))
                     {
                         var contents = File.ReadAllText(file.Path);
                         uiContent.Text = contents;
@@ -48,8 +55,13 @@ namespace RFC_UI_UWP
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"ERROR: Unable to looad RFC: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"ERROR: Unable to load RFC: {ex.Message}");
             }
+        }
+
+        private async void RfcViewerControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            await ReloadRfcAsync();
         }
     }
 }
