@@ -1,12 +1,11 @@
-﻿using Networking.RFC_Foundational_Tests;
+﻿using Networking.RFC_Foundational;
+using Networking.RFC_Foundational_Tests;
 using Networking.Simplest_Possible_Versions;
-using System;
-using Windows.Networking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
 
-namespace RFC_Foundational
+namespace Networking
 {
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
@@ -109,6 +108,12 @@ namespace RFC_Foundational
 
             uiSystemTestResults.Text += "TimeServer_Rfc_868.TimeConversion.TestCalendar:";
             nerror += TimeServer_Rfc_868.TimeConversion.TestCalendar();
+            uiSystemTestResults.Text += $" {nerror}\n";
+
+            uiSystemTestResults.Text += "CharGenTest_Rfc_864.Test: ";
+            Infrastructure.NError = 0;
+            await CharGenTest_Rfc_864.Test();
+            nerror += Infrastructure.NError;
             uiSystemTestResults.Text += $" {nerror}\n";
 
 

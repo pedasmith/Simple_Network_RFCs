@@ -1,5 +1,5 @@
 ﻿<UserControl
-    x:Class="Networking.RFC_UI_UWP.TimeClient_Rfc_868_Control"
+    x:Class="Networking.RFC_UI_UWP.CharGenClient_Rfc_864_Control"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Networking.RFC_UI_UWP"
@@ -23,17 +23,19 @@
                     <ColumnDefinition Width="auto" />
                 </Grid.ColumnDefinitions>
                 <TextBox Grid.Column="0" Header="Server Address to connect to" x:Name="uiAddress" Text="localhost"  />
-                <TextBox Grid.Column="1" x:Name="uiService" Header="Service (port)" Text="10037" MaxWidth="250" HorizontalAlignment="Left" />
+                <TextBox Grid.Column="1" x:Name="uiService" Header="Service (port)" Text="10019" MaxWidth="250" HorizontalAlignment="Left" />
                 <ToggleSwitch Grid.Column="2" x:Name="uiProtocolType" OffContent="TCP" OnContent="UDP"  VerticalAlignment="Bottom" IsOn="True"/>
             </Grid>
             <ComboBox ItemsSource="{Binding WellKnownHosts}" MinWidth="300" SelectedIndex="0" SelectionChanged="OnHostsListSelectionChanged" />
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition Width="auto" />
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="Send!" Click="OnSend" VerticalAlignment="Bottom" />
-                <Button Grid.Column="1" Content="Close" Click="OnClose" VerticalAlignment="Bottom" />
+                <TextBox Grid.Column="0" Header="Data to send" x:Name="uiData" />
+                <Button Grid.Column="1" Content="Send!" Click="OnSend" VerticalAlignment="Bottom" />
+                <Button Grid.Column="2" Content="Close" Click="OnClose" VerticalAlignment="Bottom" />
             </Grid>
         </StackPanel>
         <TextBlock Grid.Row="1">Client Results</TextBlock>
@@ -41,5 +43,4 @@
             <TextBlock x:Name="uiLog" TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
         </ScrollViewer>
     </Grid>
-
 </UserControl>

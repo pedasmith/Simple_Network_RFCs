@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 
-namespace RFC_Foundational
+namespace Networking.RFC_Foundational
 {
     public class EchoServer_Rfc_862
     {

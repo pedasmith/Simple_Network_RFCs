@@ -1,8 +1,9 @@
 ﻿<Page
-    x:Class="RFC_Foundational.MainPage"
+    x:Class="Networking.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:RFC_UI_UWP"
+    xmlns:local="using:Networking.RFC_UI_UWP"
+    xmlns:networking="using:Networking"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -30,6 +31,7 @@
                             PaneDisplayMode="Left" IsBackButtonVisible="Collapsed"
                             SelectionChanged="OnSelectMenu">
                 <NavigationView.MenuItems>
+                    <NavigationViewItem Content="Character Generator (RFC 864)" Tag="Rfc_864" />
                     <NavigationViewItem Content="Daytime (RFC 867)" Tag="Rfc_867" />
                     <NavigationViewItem Content="ECHO (RFC 862)" Tag="Rfc_862" />
                     <NavigationViewItem Content="Time (RFC 868)" Tag="Rfc_868" />
@@ -45,6 +47,16 @@
                         <TextBlock>ECHO (RFC 862)</TextBlock>
                         <local:EchoServer_Rfc_862_Control Grid.Row="1" />
                         <local:EchoClient_Rfc_862_Control Grid.Row="2" />
+                    </Grid>
+                    <Grid Tag="Rfc_864" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock>ECHO (RFC 862)</TextBlock>
+                        <local:CharGenServer_Rfc_864_Control Grid.Row="1" />
+                        <local:CharGenClient_Rfc_864_Control Grid.Row="2" />
                     </Grid>
                     <Grid Tag="Rfc_867" Visibility="Collapsed">
                         <Grid.RowDefinitions>
@@ -87,7 +99,7 @@
                     Margin="5,30,5,5"
                     Style="{StaticResource SettingRfc}"
                     >
-                <local:RfcViewerControl x:Name="uiRfcViewerControl"  />
+                <networking:RfcViewerControl x:Name="uiRfcViewerControl"  />
             </Border>
             <Button Grid.Row="1" Content="Show RFC" HorizontalAlignment="Right" VerticalAlignment="Top" Click="OnShowRfc"  />
         </Grid>

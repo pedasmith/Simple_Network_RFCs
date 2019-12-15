@@ -1,16 +1,11 @@
-﻿using Echo_Rfc_862.Utilities;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 using System.Threading.Tasks;
-using Windows.Foundation;
 using Windows.Networking;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 
-namespace RFC_Foundational
+namespace Networking.RFC_Foundational
 {
     public class TimeClient_Rfc_868
     {

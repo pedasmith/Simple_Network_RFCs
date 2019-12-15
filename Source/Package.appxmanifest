@@ -3,8 +3,8 @@
   <Identity Name="5e7068fb-1d89-4141-b8ee-4b500cbe4f71" Publisher="CN=pesmith" Version="1.0.0.0" />
   <mp:PhoneIdentity PhoneProductId="5e7068fb-1d89-4141-b8ee-4b500cbe4f71" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
-    <DisplayName>Echo_Rfc_862</DisplayName>
-    <PublisherDisplayName>pesmith</PublisherDisplayName>
+    <DisplayName>Classic Networking Utilities</DisplayName>
+    <PublisherDisplayName>ShipwreckSoftware</PublisherDisplayName>
     <Logo>Assets\Icons\StoreLogo.png</Logo>
   </Properties>
   <Dependencies>

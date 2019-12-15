@@ -1,5 +1,5 @@
 ﻿using Networking.Simplest_Possible_Versions;
-using RFC_Foundational;
+using Networking.RFC_Foundational;
 using System;
 using System.Threading.Tasks;
 using Windows.Networking;

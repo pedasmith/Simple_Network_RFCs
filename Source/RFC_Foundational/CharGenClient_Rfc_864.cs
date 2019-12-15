@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Networking;
@@ -7,7 +9,11 @@ using Windows.Storage.Streams;
 
 namespace Networking.RFC_Foundational
 {
-    public class EchoClient_Rfc_862
+    /// <summary>
+    /// TODO: this is really similar to the echo client -- what should happen to merge them into
+    /// one complete class that handles both cases?
+    /// </summary>
+    class CharGenClient_Rfc_864
     {
         DatagramSocket udpSocket;
         StreamSocket tcpSocket;
@@ -33,7 +39,7 @@ namespace Networking.RFC_Foundational
             System.Diagnostics.Debug.WriteLine(str);
         }
         Task ReadTask = null;
-        public enum ProtocolType {  Tcp, Udp }
+        public enum ProtocolType { Tcp, Udp }
         public async Task SendAsync(HostName address, string service, ProtocolType protocolType, string data)
         {
 

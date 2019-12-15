@@ -1,14 +1,11 @@
-﻿using Echo_Rfc_862.Utilities;
-using System;
-using System.Text;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Foundation;
 using Windows.Networking;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 
-namespace RFC_Foundational
+namespace Networking.RFC_Foundational
 {
     public class TimeServer_Rfc_868 : IDisposable
     {

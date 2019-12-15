@@ -1,4 +1,4 @@
-﻿using RFC_Foundational;
+﻿using Networking.RFC_Foundational;
 using System;
 using System.Threading.Tasks;
 using Windows.UI.Xaml;
@@ -6,7 +6,7 @@ using Windows.UI.Xaml.Controls;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
-namespace RFC_UI_UWP
+namespace Networking.RFC_UI_UWP
 {
     public sealed partial class TimeServer_Rfc_868_Control : UserControl
     {

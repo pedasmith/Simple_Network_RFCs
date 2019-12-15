@@ -1,5 +1,9 @@
-﻿using Networking.Utilities;
+﻿using Networking.RFC_Foundational_Tests;
+using Networking.Utilities;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Networking;
@@ -8,25 +12,28 @@ using Windows.Storage.Streams;
 
 namespace Networking.RFC_Foundational
 {
-    public class DaytimeServer_Rfc_867: IDisposable
+    class CharGenServer_Rfc_864
     {
         public class ServerOptions
         {
-            public enum Verbosity {  None, Normal, Verbose}
+            public enum Verbosity { None, Normal, Verbose }
             public Verbosity LoggingLevel { get; set; } = ServerOptions.Verbosity.Normal;
-            /// <summary>
-            /// DateTime format to use when sending back data. O=round trip format  F=common format.
-            /// </summary>
-            public string DateTimeFormat { get; internal set; } = "O";
+
+            public string DateTimeFormat { get; set; } = "O"; //TODO: datetimeformat is junk now!
+            public enum PatternType {  Classic72 };
+            public PatternType OutputPattern { get; set; } = PatternType.Classic72;
+
+            public static string Ascii95 = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+
             /// <summary>
             /// Service is the fancy name for "port". Set to 10013 to work with WinRT; RFC compliant value is 13.
             /// </summary>
-            public string Service { get; set; }  = "10013";
+            public string Service { get; set; } = "10019";
 
             /// <summary>
             /// The RFC compatible service.
             /// </summary>
-            public static string RfcService = "13";
+            public static string RfcService = "19";
             /// <summary>
             /// How long should we wait to drain the incoming stream? Setting this large will always result in a slower
             /// client because we can only close the outgoing stream when the incoming stream is drained (or we give up
@@ -55,7 +62,7 @@ namespace Networking.RFC_Foundational
         }
         public ServerOptions Options { get; internal set; } = new ServerOptions();
 
-        public class ServerStats 
+        public class ServerStats
         {
             public int NConnections = 0;
             public int NResponses = 0;
@@ -66,8 +73,9 @@ namespace Networking.RFC_Foundational
 
         public delegate void LogEventHandler(object sender, string str);
         public event LogEventHandler LogEvent;
+        private Random rnd = new Random();
 
-        public DaytimeServer_Rfc_867(ServerOptions options = null) 
+        public CharGenServer_Rfc_864(ServerOptions options = null)
         {
             if (options != null)
             {
@@ -124,7 +132,7 @@ namespace Networking.RFC_Foundational
             {
                 await TcpListener.BindServiceNameAsync(Options.Service);
                 {
-                    Log($"Daytime Connected on Tcp {TcpListener.Information.LocalPort}");
+                    Log($"CharGen Connected on Tcp {TcpListener.Information.LocalPort}");
                 }
             }
             catch (Exception e)
@@ -140,7 +148,7 @@ namespace Networking.RFC_Foundational
             {
                 await UdpListener.BindServiceNameAsync(Options.Service);
                 {
-                    Log($"Daytime Connected on Udp {UdpListener.Information.LocalPort}");
+                    Log($"CharGen Connected on Udp {UdpListener.Information.LocalPort}");
                 }
             }
             catch (Exception e)
@@ -173,7 +181,7 @@ namespace Networking.RFC_Foundational
                 var os = await sender.GetOutputStreamAsync(remoteHost, remotePort);
                 var dw = new DataWriter(os);
 
-                Task t = DaytimeAsyncUdp(dr, dw, remotePort);
+                Task t = CharGenAsyncUdp(dr, dw, remotePort);
                 await t;
             }
             catch (Exception)
@@ -187,10 +195,10 @@ namespace Networking.RFC_Foundational
         {
             Stats.NConnections++;
             var socket = args.Socket;
-            Task t = DaytimeAsyncTcp(socket);
+            Task t = CharGenAsyncTcp(socket);
             await t;
         }
-        private async Task DaytimeAsyncTcp(StreamSocket tcpSocket)
+        private async Task CharGenAsyncTcp(StreamSocket tcpSocket)
         {
             // Step 1 is to send the reply.
             // Step 2 is to read (and discard) all incoming data
@@ -208,7 +216,7 @@ namespace Networking.RFC_Foundational
             var writeBuffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(str, Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
             var writeTask = tcpSocket.OutputStream.WriteAsync(writeBuffer);
             var bytesToSend = writeBuffer.Length;
-            writeTask.Progress += (operation, progress) => 
+            writeTask.Progress += (operation, progress) =>
             {
                 totalBytesSent = progress;
             };
@@ -216,7 +224,7 @@ namespace Networking.RFC_Foundational
 
 
             // Now read in all of the data that might have been passed but only for a little while.
-            // Daytime doesn't use this information at all.
+            // CharGen doesn't use this information at all.
             var s = tcpSocket.InputStream;
             var buffer = new Windows.Storage.Streams.Buffer(2048);
 
@@ -274,39 +282,70 @@ namespace Networking.RFC_Foundational
         }
 
 
-        private async Task DaytimeAsyncUdp(DataReader dr, DataWriter dw, string remotePort)
+        private async Task CharGenAsyncUdp(DataReader dr, DataWriter dw, string remotePort)
         {
-            // Step 1 is to send the reply.
-            // Step 2 is to read (and discard) all incoming data from the single UDP packet
-            var time = DateTime.Now;
-            var str = time.ToString(Options.DateTimeFormat); // "F" is the default
+            var start = rnd.Next(0, 95);
+            var str = MakeAscii(start, 72);
 
-
-            string suffix = "";
-            if (dr != null) // Will always be present for normal packets
-            {
-                uint count = dr.UnconsumedBufferLength;
-                if (count > 0)
-                {
-                    Stats.NBytes += count;
-                    byte[] buffer = new byte[count];
-                    dr.ReadBytes(buffer);
-                    var stringresult = BufferToString.ToString(buffer);
-                    suffix = stringresult;
-                    Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP read {count} bytes {stringresult}");
-                }
-            }
-
-            str = str + suffix;
-            Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP: reply with daytime <<{str}>> to remote port {remotePort}");
+            Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP: reply with CharGen <<{str}>> to remote port {remotePort}");
             dw.WriteString(str);
             await dw.StoreAsync();
             await dw.FlushAsync(); // NOTE: this flush doesn't actually do anything useful
             Interlocked.Increment(ref Stats.NResponses);
 
-
             dw.Dispose();
             Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP closing down the current writing socket for {str}");
+        }
+
+        /// <summary>
+        /// Generates an ascii string which is a subset of the original.
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        public static string MakeAscii(int start, int length)
+        {
+            string proto = ServerOptions.Ascii95;
+            var sb = new StringBuilder();
+            if (start < 0) start = 0;
+            start = start % proto.Length;
+            if (length < 0) length = 0;
+            if (length > proto.Length) length = proto.Length;
+            for (int i=0; i<length; i++)
+            {
+                var index = (start + i) % proto.Length;
+                sb.Append(proto[index]);
+            }
+            return sb.ToString();
+        }
+
+        public static void TestAscii95()
+        {
+            // The Ascii95 string should be 95 chars long and in order
+            Infrastructure.IfTrueError(ServerOptions.Ascii95.Length != 95, $"Ascii95 should be 95 chars long; is actually {ServerOptions.Ascii95.Length}");
+            char lastChar = '\0';
+            for (int i=0; i<ServerOptions.Ascii95.Length; i++)
+            {
+                var ch = ServerOptions.Ascii95[i];
+                Infrastructure.IfTrueError(ch <= lastChar, $"Ascii95 [{i}] is {ch} which isn't > lastChar {lastChar}");
+                Infrastructure.IfTrueError(char.IsControl(ch), $"Ascii95 [{i}] is {ch} which is a control character");
+
+                lastChar = ch;
+            }
+
+            TestMakeAsciiOne(0, 5, " !\"#$");
+            TestMakeAsciiOne(1, 5, "!\"#$%");
+            TestMakeAsciiOne(95, 5, " !\"#$");
+            TestMakeAsciiOne(0, -1, "");
+            TestMakeAsciiOne(-1, 5, " !\"#$");
+
+        }
+
+        private static void TestMakeAsciiOne(int start, int length, string expected)
+        {
+            var actual = MakeAscii(start, length);
+            Infrastructure.IfTrueError(actual != expected, $"MakeAscii({start},{length}) should be [{expected}] but actually got [{actual}]");
+
         }
     }
 }

@@ -118,14 +118,23 @@
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="RFC_Foundational\CharGenClient_Rfc_864.cs" />
+    <Compile Include="RFC_Foundational\CharGenServer_Rfc_864.cs" />
     <Compile Include="RFC_Foundational\DaytimeClient_Rfc_867.cs" />
     <Compile Include="RFC_Foundational\DaytimeServer_Rfc_867.cs" />
     <Compile Include="RFC_Foundational\EchoClient_Rfc_862.cs" />
     <Compile Include="RFC_Foundational\TimeClient_Rfc_868.cs" />
     <Compile Include="RFC_Foundational\TimeServer_Rfc_868.cs" />
+    <Compile Include="RFC_Foundational_Tests\CharGenTest_Rfc_864.cs" />
     <Compile Include="RFC_Foundational_Tests\DaytimeTest_Rfc_867.cs" />
     <Compile Include="RFC_Foundational_Tests\Infrastructure.cs" />
     <Compile Include="RFC_Foundational_Tests\TimeTest_Rfc_868.cs" />
+    <Compile Include="RFC_UI_UWP\CharGenClient_Rfc_864_Control.xaml.cs">
+      <DependentUpon>CharGenClient_Rfc_864_Control.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="RFC_UI_UWP\CharGenServer_Rfc_864_Control.xaml.cs">
+      <DependentUpon>CharGenServer_Rfc_864_Control.xaml</DependentUpon>
+    </Compile>
     <Compile Include="RFC_UI_UWP\DaytimeClient_Rfc_867_Control.xaml.cs">
       <DependentUpon>DaytimeClient_Rfc_867_Control.xaml</DependentUpon>
     </Compile>
@@ -215,6 +224,7 @@
     <Content Include="Assets\RFC\rfc862.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Assets\RFC\rfc864.txt" />
     <Content Include="Assets\RFC\rfc867.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -228,6 +238,14 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="RFC_UI_UWP\CharGenClient_Rfc_864_Control.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="RFC_UI_UWP\CharGenServer_Rfc_864_Control.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="RFC_UI_UWP\DaytimeClient_Rfc_867_Control.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

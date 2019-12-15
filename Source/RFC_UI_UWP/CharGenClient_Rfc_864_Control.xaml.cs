@@ -1,18 +1,27 @@
 ﻿using Networking.RFC_Foundational;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Foundation;
+using Windows.Foundation.Collections;
 using Windows.Networking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Data;
+using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Navigation;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
 namespace Networking.RFC_UI_UWP
 {
-
-    public sealed partial class DaytimeClient_Rfc_867_Control : UserControl
+    public sealed partial class CharGenClient_Rfc_864_Control : UserControl
     {
-        public DaytimeClient_Rfc_867_Control()
+        public CharGenClient_Rfc_864_Control()
         {
             this.InitializeComponent();
             this.DataContext = this; // Set up the DataContext so the data binding to the WellKnownHosts list works
@@ -20,6 +29,7 @@ namespace Networking.RFC_UI_UWP
 
 
         /// <summary>
+        /// TODO: correct list. Are there any public chargen servers?
         /// List of well know hosts/services that the user can try. These aren't guaranteed to work!
         /// As of 2019-12-14, the TCP services seem to work but not the UDP ones.
         /// See https://www.nist.gov/pml/time-and-frequency-division/services/internet-time-service-its for servers
@@ -49,7 +59,7 @@ namespace Networking.RFC_UI_UWP
             }
         }
 
-        DaytimeClient_Rfc_867 client;
+        CharGenClient_Rfc_864 client;
         private async void OnSend(object sender, RoutedEventArgs e)
         {
             try
@@ -57,11 +67,11 @@ namespace Networking.RFC_UI_UWP
                 var host = new HostName(uiAddress.Text);
                 var service = uiService.Text;
                 var data = uiData.Text;
-                var ptype = uiProtocolType.IsOn ? DaytimeClient_Rfc_867.ProtocolType.Udp : DaytimeClient_Rfc_867.ProtocolType.Tcp; // double-checked; off is TCP.
+                var ptype = uiProtocolType.IsOn ? CharGenClient_Rfc_864.ProtocolType.Udp : CharGenClient_Rfc_864.ProtocolType.Tcp; // double-checked; off is TCP.
 
                 if (client == null)
                 {
-                    client = new DaytimeClient_Rfc_867();
+                    client = new CharGenClient_Rfc_864();
                     client.LogEvent += Client_LogEvent;
                 }
                 await client.SendAsync(host, service, ptype, data);

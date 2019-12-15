@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
-namespace Echo_Rfc_862.Utilities
+namespace Networking.Utilities
 {
     public static class BufferToString
     {
