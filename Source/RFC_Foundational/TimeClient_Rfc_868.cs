@@ -19,15 +19,20 @@ namespace RFC_Foundational
         /// </summary>
         public class TimeResult
         {
-            public static TimeResult MakeSucceeded(string value, double time)
+            public static TimeResult MakeSucceeded(long unixTimeSeconds, string value, double time)
             {
                 var retval = new TimeResult()
                 {
                     Succeeded = true,
                     ExtendedError = null,
+                    UnixTimeSeconds = unixTimeSeconds,
                     Value = value,
                     TimeInSeconds = time
                 };
+                if (time > 1000)
+                {
+                    ;
+                }
                 return retval;
             }
             public static TimeResult MakeFailed(Exception e, double time, string value = "")
@@ -39,6 +44,10 @@ namespace RFC_Foundational
                     Value = value,
                     TimeInSeconds = time
                 };
+                if (time > 1000)
+                {
+                    ;
+                }
                 return retval;
             }
             public static TimeResult MakeFailed(SocketErrorStatus status, double time, string value = "")
@@ -51,6 +60,10 @@ namespace RFC_Foundational
                     Value = value,
                     TimeInSeconds = time
                 };
+                if (time > 1000)
+                {
+                    ;
+                }
                 return retval;
             }
 
@@ -59,6 +72,7 @@ namespace RFC_Foundational
             private SocketErrorStatus _ManuallySetStatus = SocketErrorStatus.Unknown;
             public SocketErrorStatus Error { get { if (ExtendedError == null) return _ManuallySetStatus; return SocketError.GetStatus(ExtendedError.HResult); } }
             public string Value { get; set; }
+            public long UnixTimeSeconds { get; set; } = 0;
             public double TimeInSeconds { get; set; }
         }
 
@@ -145,7 +159,7 @@ namespace RFC_Foundational
                 var nbytes = await dr.LoadAsync(4); // Always gets 4 bytes
                 if (nbytes >= 4)
                 {
-                    var retval = ReadDataReader(dr);
+                    var retval = ReadDataReader(startTime, dr);
                     return retval;
                 }
 
@@ -225,7 +239,7 @@ namespace RFC_Foundational
             try
             {
                 var dr = args.GetDataReader();
-                var udpResult = ReadDataReader(dr);
+                var udpResult = ReadDataReader(UdpStartTime, dr);
                 UdpResults.TryAdd(sender.Information.LocalPort, udpResult);
             }
             catch (Exception ex)
@@ -243,7 +257,7 @@ namespace RFC_Foundational
             sender.Dispose();
         }
 
-        private TimeResult ReadDataReader(DataReader dr)
+        private TimeResult ReadDataReader(DateTime startTime, DataReader dr)
         {
             uint count = dr.UnconsumedBufferLength;
             if (count >= 4)
@@ -255,14 +269,14 @@ namespace RFC_Foundational
 
                 var stringresult = $"{result.ToString()} raw={rawdata} {rawdata:X}";
                 Log($"{stringresult}"); // Will be printed on the screen.
-                var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
-                return TimeResult.MakeSucceeded(stringresult, delta);
+                var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
+                return TimeResult.MakeSucceeded(result.ToUnixTimeSeconds(), stringresult, delta);
             }
             else
             {
                 var stringresult = "ERROR:No results!";
                 Log($"TIME: CLIENT:{stringresult}");
-                var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
                 return TimeResult.MakeFailed(SocketErrorStatus.HttpInvalidServerResponse, delta);
             }
         }

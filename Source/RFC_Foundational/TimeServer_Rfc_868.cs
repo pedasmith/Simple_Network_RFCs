@@ -268,19 +268,11 @@ namespace RFC_Foundational
 
         private async Task TimeAsyncUdp(DataReader dr, DataWriter dw, string remotePort)
         {
-            // Step 1 is to send the reply.
-            // Step 2 is to read (and discard) all incoming data from the single UDP packet
-            //CHANGE: use datawriter
             var now = TimeConversion.GetNow();
             dw.WriteUInt32(now);
             await dw.StoreAsync();
             Interlocked.Increment(ref Stats.NResponses);
-
-            //CHANGE: don't read the UDP data, it's always blank
-
             Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP: reply with time {now} to remote port {remotePort}");
-            Interlocked.Increment(ref Stats.NResponses);
-
 
             dw.Dispose();
             Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP closing down the current writing socket for {now}");

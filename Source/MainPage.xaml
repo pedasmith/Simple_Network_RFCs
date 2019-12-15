@@ -73,7 +73,9 @@
                             <RowDefinition Height="auto" />
                         </Grid.RowDefinitions>
                         <TextBlock>System Test</TextBlock>
-                        <TextBlock x:Name="uiSystemTestResults" TextWrapping="Wrap" IsTextSelectionEnabled="True" Grid.Row="1" />
+                        <ScrollViewer Grid.Row="1">
+                            <TextBlock x:Name="uiSystemTestResults" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
+                        </ScrollViewer>
                         <Button Content="Test" Click="OnSystemTestClick" Grid.Row="2" />
                     </Grid>
                 </Grid>

@@ -1,5 +1,5 @@
-﻿using Networking.Simplest_Possible_Versions;
-using RFC_Foundational_Tests;
+﻿using Networking.RFC_Foundational_Tests;
+using Networking.Simplest_Possible_Versions;
 using System;
 using Windows.Networking;
 using Windows.UI.Xaml;
@@ -74,10 +74,25 @@ namespace RFC_Foundational
             }
         }
 
+        public void LogTestError(string error)
+        {
+            uiSystemTestResults.Text += $"{error}\n";
+        }
+
+        public void LogTestMessage(string error)
+        {
+            // Logging message are just ignored for now. Later it might make sense
+            // to optionally log these messages.
+            // uiSystemTestResults.Text += $"{error}\n";
+        }
+
         private async void OnSystemTestClick(object sender, RoutedEventArgs e)
         {
             int nerror = 0;
-            uiSystemTestResults.Text = "";
+            uiSystemTestResults.Text = "Starting test run\n\n";
+
+            Infrastructure.LogError += LogTestError;
+            Infrastructure.LogMessage += LogTestMessage;
 
 
             uiSystemTestResults.Text += "Simplest_Daytime_Sample_Rfc_867.RunAsync: ";
@@ -98,10 +113,20 @@ namespace RFC_Foundational
 
 
             uiSystemTestResults.Text += "DaytimeTest_Rfc_867.Test: ";
+            Infrastructure.NError = 0;
             await DaytimeTest_Rfc_867.Test();
+            nerror += Infrastructure.NError;
             uiSystemTestResults.Text += $" {nerror}\n";
 
+            uiSystemTestResults.Text += "TimeTest_Rfc_868.Test: ";
+            Infrastructure.NError = 0;
+            await TimeTest_Rfc_868.Test();
+            nerror += Infrastructure.NError;
+            uiSystemTestResults.Text += $" {nerror}\n";
 
+            uiSystemTestResults.Text += $"\n\n\nTotal errors: {nerror}";
+            Infrastructure.LogError -= LogTestError;
+            Infrastructure.LogMessage -= LogTestMessage;
         }
     }
 }

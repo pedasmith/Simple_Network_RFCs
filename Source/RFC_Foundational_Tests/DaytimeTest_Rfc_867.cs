@@ -1,14 +1,11 @@
 ﻿using Networking.Simplest_Possible_Versions;
 using RFC_Foundational;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.Networking;
 using Windows.Networking.Sockets;
 
-namespace RFC_Foundational_Tests
+namespace Networking.RFC_Foundational_Tests
 {
     public class DaytimeTest_Rfc_867
     {
@@ -19,24 +16,19 @@ namespace RFC_Foundational_Tests
             var testObject = new DaytimeTest_Rfc_867();
             try
             {
-                await testObject.Test_Stress(DaytimeClient_Rfc_867.ProtocolType.Tcp);
+                await testObject.Test_Simplest_Code();
 
-                if (false)
-                {
-                    await testObject.Test_Simplest_Code();
+                var protocol = DaytimeClient_Rfc_867.ProtocolType.Udp;
+                await testObject.Test_Good_Path(protocol);
+                await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
+                await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
+                await testObject.Test_Stress(protocol);
 
-                    var protocol = DaytimeClient_Rfc_867.ProtocolType.Udp;
-                    await testObject.Test_Good_Path(protocol);
-                    await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
-                    await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
-                    await testObject.Test_Stress(protocol);
-
-                    protocol = DaytimeClient_Rfc_867.ProtocolType.Tcp;
-                    await testObject.Test_Good_Path(protocol);
-                    await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
-                    await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
-                    await testObject.Test_Stress(protocol);
-                }
+                protocol = DaytimeClient_Rfc_867.ProtocolType.Tcp;
+                await testObject.Test_Good_Path(protocol);
+                await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
+                await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
+                await testObject.Test_Stress(protocol);
             }
             catch (Exception ex)
             {
@@ -127,7 +119,7 @@ namespace RFC_Foundational_Tests
                     return;
                 }
 
-                var client = new DaytimeClient_Rfc_867(clientOptions); // Daytime isn't on this port
+                var client = new DaytimeClient_Rfc_867(clientOptions);
                 var result = await client.SendAsync(host, "79", protocol, "");
                 Infrastructure.IfTrueError(result.Succeeded, "result.Succeeded ");
                 Infrastructure.IfTrueError(!String.IsNullOrEmpty(result.Value), "result.Value is not null");
@@ -147,7 +139,7 @@ namespace RFC_Foundational_Tests
             string pname = protocol.ToString();
 
             const int NLOOP = 10;
-            const int NBUNCH = 10;
+            const int NBUNCH = 50;
 
             const double ALLOWED_TIME = 20.0; // Normally we expect everything to be fast. No so much for a stress test!
             const int ALLOWED_CONN_RESET = (NLOOP * NBUNCH) * 5 / 100; // Allow 5% conn reset
@@ -228,7 +220,7 @@ namespace RFC_Foundational_Tests
                 // Why is the expected not equal to the NBytesSent? Because TCP has a weird timing thing:
                 // the server has to close down reading from the client relatively quickly and can't waste
                 // time for the client to send bytes that probably won't come.
-                var expectedMinBytes = protocol == DaytimeClient_Rfc_867.ProtocolType.Udp ? NBytesSent : NBytesSent / 2;
+                var expectedMinBytes = protocol == DaytimeClient_Rfc_867.ProtocolType.Udp ? NBytesSent : NBytesSent / 4;
                 Infrastructure.IfTrueError(server.Stats.NBytes > NBytesSent, $"Server got {server.Stats.NBytes} bytes but expected {NBytesSent} for {pname}");
                 Infrastructure.IfTrueError(server.Stats.NBytes < expectedMinBytes, $"Server got {server.Stats.NBytes} bytes but expected {NBytesSent} with a minimum value of {expectedMinBytes} for {pname}");
                 Infrastructure.IfTrueError(server.Stats.NExceptions != 0, $"Server got {server.Stats.NExceptions} exceptions but expected {0} for {pname}");
