@@ -26,6 +26,7 @@
                 <TextBox Grid.Column="1" x:Name="uiService" Header="Service (port)" Text="10013" MaxWidth="250" HorizontalAlignment="Left" />
                 <ToggleSwitch Grid.Column="2" x:Name="uiProtocolType" OffContent="TCP" OnContent="UDP"  VerticalAlignment="Bottom" IsOn="True"/>
             </Grid>
+            <ComboBox ItemsSource="{Binding WellKnownHosts}" MinWidth="300" SelectedIndex="0" SelectionChanged="OnHostsListSelectionChanged" />
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

@@ -1,5 +1,6 @@
 ﻿using RFC_Foundational;
 using System;
+using System.Collections.Generic;
 using Windows.Networking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -8,11 +9,45 @@ using Windows.UI.Xaml.Controls;
 
 namespace RFC_UI_UWP
 {
+
     public sealed partial class DaytimeClient_Rfc_867_Control : UserControl
     {
+
         public DaytimeClient_Rfc_867_Control()
         {
             this.InitializeComponent();
+            this.DataContext = this; // Set up the DataContext so the data binding to the WellKnownHosts list works
+        }
+
+
+        /// <summary>
+        /// List of well know hosts/services that the user can try. These aren't guaranteed to work!
+        /// As of 2019-12-14, the TCP services seem to work but not the UDP ones.
+        /// See https://www.nist.gov/pml/time-and-frequency-division/services/internet-time-service-its for servers
+        /// </summary>
+        public List<HostService> WellKnownHosts { get; } = new List<HostService>()
+        {
+            new HostService("localhost", "10013"),
+            new HostService("time.nist.gov"), // NIST format is like JJJJJ YR-MO-DA HH:MM:SS TT L H msADV UTC(NIST) OTM
+            new HostService("time-a-g.nist.gov"),
+            new HostService("time-a-b.nist.gov"),
+            new HostService("time-a-wwv.nist.gov"),
+            new HostService("utcnist.colorado.edu"),
+            new HostService("utcnist2.colorado.edu"),
+        };
+        public class HostService
+        {
+            public HostService(string host, string service = null)
+            {
+                Host = host;
+                if (service != null) Service = service;
+            }
+            public string Host { get; set; } = "example.com";
+            public string Service { get; set; } = "13";
+            public override string ToString()
+            {
+                return Host;
+            }
         }
 
         DaytimeClient_Rfc_867 client;
@@ -58,5 +93,13 @@ namespace RFC_UI_UWP
             client = null;
         }
 
+        private void OnHostsListSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count != 1) return;
+            var item = e.AddedItems[0] as HostService;
+            if (item == null) return;
+            uiAddress.Text = item.Host;
+            uiService.Text = item.Service;
+        }
     }
 }
