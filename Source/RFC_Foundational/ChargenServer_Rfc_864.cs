@@ -200,10 +200,8 @@ namespace Networking.RFC_Foundational
         }
         private async Task CharGenAsyncTcp(StreamSocket tcpSocket)
         {
-            // Step 1 is to send the reply.
-            // Step 2 is to read (and discard) all incoming data
-            var time = DateTime.Now;
-            var str = time.ToString(Options.DateTimeFormat); // "F" is the default
+            int start = 0;
+            var str = MakeAscii(start, 72);
 
             //NOTE: here's how to write data using a DataWriter
             //var dw = new DataWriter(tcpSocket.OutputStream);
@@ -222,6 +220,7 @@ namespace Networking.RFC_Foundational
             };
             await tcpSocket.OutputStream.FlushAsync();
 
+            //TODO: the actual protocol is to keep on writing until the input is closed.
 
             // Now read in all of the data that might have been passed but only for a little while.
             // CharGen doesn't use this information at all.
@@ -303,7 +302,7 @@ namespace Networking.RFC_Foundational
         /// <param name="start"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        public static string MakeAscii(int start, int length)
+        public static string MakeAscii(int start, int length=72)
         {
             string proto = ServerOptions.Ascii95;
             var sb = new StringBuilder();

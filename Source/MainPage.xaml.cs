@@ -64,6 +64,9 @@ namespace Networking
                 case "Rfc_862":
                     await uiRfcViewerControl.SetContentsTitle("ECHO (RFC 862)", "rfc862.txt");
                     break;
+                case "Rfc_864":
+                    await uiRfcViewerControl.SetContentsTitle("Character Generator (RFC 864)", "rfc864.txt");
+                    break;
                 case "Rfc_867":
                     await uiRfcViewerControl.SetContentsTitle("Daytime (RFC 867)", "rfc867.txt");
                     break;

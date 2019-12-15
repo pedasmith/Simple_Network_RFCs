@@ -54,7 +54,7 @@
                             <RowDefinition Height="*" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <TextBlock>ECHO (RFC 862)</TextBlock>
+                        <TextBlock>Character Generator (RFC 864)</TextBlock>
                         <local:CharGenServer_Rfc_864_Control Grid.Row="1" />
                         <local:CharGenClient_Rfc_864_Control Grid.Row="2" />
                     </Grid>

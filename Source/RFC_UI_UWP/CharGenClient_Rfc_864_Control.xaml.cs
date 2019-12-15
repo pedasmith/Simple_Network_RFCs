@@ -1,19 +1,9 @@
 ﻿using Networking.RFC_Foundational;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Networking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 
 // The User Control item template is documented at https://go.microsoft.com/fwlink/?LinkId=234236
 
@@ -36,7 +26,7 @@ namespace Networking.RFC_UI_UWP
         /// </summary>
         public List<HostService> WellKnownHosts { get; } = new List<HostService>()
         {
-            new HostService("localhost", "10013"),
+            new HostService("localhost", "10019"),
             new HostService("time.nist.gov"), // NIST format is like JJJJJ YR-MO-DA HH:MM:SS TT L H msADV UTC(NIST) OTM
             new HostService("time-a-g.nist.gov"),
             new HostService("time-a-b.nist.gov"),
@@ -52,7 +42,7 @@ namespace Networking.RFC_UI_UWP
                 if (service != null) Service = service;
             }
             public string Host { get; set; } = "example.com";
-            public string Service { get; set; } = "13";
+            public string Service { get; set; } = "19"; //TODO: all these services should be more centralized in just the foundational server code
             public override string ToString()
             {
                 return Host;

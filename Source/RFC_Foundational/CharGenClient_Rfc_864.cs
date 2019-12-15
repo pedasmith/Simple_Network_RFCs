@@ -11,14 +11,15 @@ namespace Networking.RFC_Foundational
 {
     /// <summary>
     /// TODO: this is really similar to the echo client -- what should happen to merge them into
-    /// one complete class that handles both cases?
+    /// one complete class that handles both cases? Worse, why base this so much on Echo; for udp
+    /// it's much closer to DayTime or Time.
+    /// TODO: need the stats and options!
     /// </summary>
     class CharGenClient_Rfc_864
     {
         DatagramSocket udpSocket;
         StreamSocket tcpSocket;
         DataWriter tcpDw;
-        DataWriter udpDw;
         public delegate void LogEventHandler(object sender, string str);
         public event LogEventHandler LogEvent;
 
@@ -42,7 +43,6 @@ namespace Networking.RFC_Foundational
         public enum ProtocolType { Tcp, Udp }
         public async Task SendAsync(HostName address, string service, ProtocolType protocolType, string data)
         {
-
             try
             {
                 if (protocolType == ProtocolType.Tcp && tcpSocket == null)
@@ -50,6 +50,8 @@ namespace Networking.RFC_Foundational
                     tcpSocket = new StreamSocket();
                     await tcpSocket.ConnectAsync(address, service);
                     tcpDw = new DataWriter(tcpSocket.OutputStream);
+                    tcpDw.WriteString(data);
+                    await tcpDw.StoreAsync();
 
                     // Now read everything
                     var dr = new DataReader(tcpSocket.InputStream);
@@ -60,16 +62,13 @@ namespace Networking.RFC_Foundational
                 {
                     udpSocket = new DatagramSocket();
                     await udpSocket.ConnectAsync(address, service);
-                    udpDw = new DataWriter(udpSocket.OutputStream);
+                    var b = new Windows.Storage.Streams.Buffer(0);
+                    await udpSocket.OutputStream.WriteAsync(b);
+                    //TODO: need the stats!
 
                     // Now read everything
                     udpSocket.MessageReceived += UdpSocket_MessageReceived;
                 }
-                var dw = protocolType == ProtocolType.Tcp ? tcpDw : udpDw;
-
-                dw.WriteString(data);
-                await dw.StoreAsync();
-
             }
             catch (Exception ex)
             {
@@ -102,7 +101,7 @@ namespace Networking.RFC_Foundational
                     {
                         byte[] buffer = new byte[dr.UnconsumedBufferLength];
                         dr.ReadBytes(buffer);
-                        LogEchoBuffer(buffer);
+                        LogCharGenBuffer(buffer);
                     }
                     else // socket is done
                     {
@@ -112,11 +111,11 @@ namespace Networking.RFC_Foundational
             }
             catch (Exception ex)
             {
-                Log($"ECHO: CLIENT: Exception {ex.Message}");
+                Log($"Character Generator: CLIENT: Exception {ex.Message}");
             }
         }
 
-        private void LogEchoBuffer(byte[] buffer)
+        private void LogCharGenBuffer(byte[] buffer)
         {
             var sb = new StringBuilder();
             foreach (var b in buffer)
@@ -130,7 +129,7 @@ namespace Networking.RFC_Foundational
                     sb.Append($"0x{b:X2}");
                 }
             }
-            Log($"ECHO: CLIENT: got buffer length={buffer.Length} {sb.ToString()}");
+            Log($"Character Generator: CLIENT: {sb.ToString()}");
         }
     }
 }

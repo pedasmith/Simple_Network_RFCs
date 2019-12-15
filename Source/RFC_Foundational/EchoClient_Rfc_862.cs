@@ -36,7 +36,6 @@ namespace Networking.RFC_Foundational
         public enum ProtocolType {  Tcp, Udp }
         public async Task SendAsync(HostName address, string service, ProtocolType protocolType, string data)
         {
-
             try
             {
                 if (protocolType == ProtocolType.Tcp && tcpSocket == null)
