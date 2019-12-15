@@ -118,7 +118,7 @@ namespace RFC_Foundational
         }
 
         public enum ProtocolType { Tcp, Udp }
-        public async Task<TimeResult> SendAsync(HostName address, string service = "10013", ProtocolType protocolType = ProtocolType.Udp)
+        public async Task<TimeResult> SendAsync(HostName address, string service = "10037", ProtocolType protocolType = ProtocolType.Udp)
         {
             switch (protocolType)
             {

@@ -107,6 +107,10 @@ namespace RFC_Foundational
             }
         }
 
+        /// <summary>
+        /// The Dispose means that when you create the server in a using() block,
+        /// the server sockets will be automatically closed at the end.
+        /// </summary>
         public void Dispose()
         {
             if (TcpListener != null)

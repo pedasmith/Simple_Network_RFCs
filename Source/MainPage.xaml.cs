@@ -1,4 +1,5 @@
-﻿using RFC_Foundational_Tests;
+﻿using Networking.Simplest_Possible_Versions;
+using RFC_Foundational_Tests;
 using System;
 using Windows.Networking;
 using Windows.UI.Xaml;
@@ -21,12 +22,6 @@ namespace RFC_Foundational
         private void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
             DisplayRequestRequestActive(true); // Windows will turn this off automatically.
-
-            //var testTask = DaytimeTest_Rfc_867.Test();
-            //await testTask;
-
-            int nerror = 0;
-            nerror += TimeServer_Rfc_868.TimeConversion.TestCalendar();
         }
 
         static Windows.System.Display.DisplayRequest CurrDisplayRequest = null;
@@ -77,6 +72,36 @@ namespace RFC_Foundational
                     await uiRfcViewerControl.SetContentsTitle("Time (RFC 868)", "rfc868.txt");
                     break;
             }
+        }
+
+        private async void OnSystemTestClick(object sender, RoutedEventArgs e)
+        {
+            int nerror = 0;
+            uiSystemTestResults.Text = "";
+
+
+            uiSystemTestResults.Text += "Simplest_Daytime_Sample_Rfc_867.RunAsync: ";
+            var result867simple = await Simplest_Daytime_Sample_Rfc_867.RunAsync();
+            if (!result867simple.Succeeded) nerror++;
+            uiSystemTestResults.Text += $" {nerror}\n";
+
+
+            uiSystemTestResults.Text += "Simplest_Time_Sample_Rfc_868.RunAsync: ";
+            var result868simple = await Simplest_Time_Sample_Rfc_868.RunAsync();
+            if (!result868simple.Succeeded) nerror++;
+            uiSystemTestResults.Text += $" {nerror}\n";
+
+
+            uiSystemTestResults.Text += "TimeServer_Rfc_868.TimeConversion.TestCalendar:";
+            nerror += TimeServer_Rfc_868.TimeConversion.TestCalendar();
+            uiSystemTestResults.Text += $" {nerror}\n";
+
+
+            uiSystemTestResults.Text += "DaytimeTest_Rfc_867.Test: ";
+            await DaytimeTest_Rfc_867.Test();
+            uiSystemTestResults.Text += $" {nerror}\n";
+
+
         }
     }
 }

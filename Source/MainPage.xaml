@@ -33,6 +33,7 @@
                     <NavigationViewItem Content="Daytime (RFC 867)" Tag="Rfc_867" />
                     <NavigationViewItem Content="ECHO (RFC 862)" Tag="Rfc_862" />
                     <NavigationViewItem Content="Time (RFC 868)" Tag="Rfc_868" />
+                    <NavigationViewItem Content="System Test" Tag="SystemTest" />
                 </NavigationView.MenuItems>
                 <Grid VerticalAlignment="Stretch" x:Name="uiControls">
                     <Grid Tag="Rfc_862" Visibility="Visible">
@@ -64,6 +65,16 @@
                         <TextBlock>TIME (RFC 868)</TextBlock>
                         <local:TimeServer_Rfc_868_Control Grid.Row="1" />
                         <local:TimeClient_Rfc_868_Control Grid.Row="2" />
+                    </Grid>
+                    <Grid Tag="SystemTest" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock>System Test</TextBlock>
+                        <TextBlock x:Name="uiSystemTestResults" TextWrapping="Wrap" IsTextSelectionEnabled="True" Grid.Row="1" />
+                        <Button Content="Test" Click="OnSystemTestClick" Grid.Row="2" />
                     </Grid>
                 </Grid>
             </NavigationView>
