@@ -91,6 +91,8 @@ namespace Networking
 
         private async void OnSystemTestClick(object sender, RoutedEventArgs e)
         {
+            uiSystemTestResults.Text = "Starting test run\n\n";
+
             int nerror = 0;
             uiSystemTestResults.Text += "EchoTest_Rfc_862.Test: ";
             Infrastructure.NError = 0;
@@ -98,13 +100,12 @@ namespace Networking
             nerror += Infrastructure.NError;
             uiSystemTestResults.Text += $" {nerror}\n";
 
-            nerror += await DoFullTest();
+            // nerror += await DoFullTest();
         }
 
         private async Task<int> DoFullTest()
         { 
             int nerror = 0;
-            uiSystemTestResults.Text = "Starting test run\n\n";
 
             Infrastructure.LogError += LogTestError;
             Infrastructure.LogMessage += LogTestMessage;

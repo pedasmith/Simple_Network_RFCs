@@ -164,6 +164,7 @@
     </Compile>
     <Compile Include="Simplest_Possible_Versions\Simplest_Daytime_Sample_Rfc_867.cs" />
     <Compile Include="Simplest_Possible_Versions\Simplest_Time_Sample_Rfc_868.cs" />
+    <Compile Include="Simplest_Possible_Versions\Simplest_Echo_Rfc_862.cs" />
     <Compile Include="Utilities\BufferToString.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -292,6 +293,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Assets\Comments\About_Datagram_Sockets.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="Assets\Comments\About_Daytime_Protocol_867.md" />
     <None Include="Assets\Comments\About_Stream_Sockets.md" />
   </ItemGroup>

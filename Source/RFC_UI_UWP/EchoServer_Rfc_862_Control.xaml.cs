@@ -25,7 +25,12 @@ namespace Networking.RFC_UI_UWP
 
         private void OnStartServers(object sender, RoutedEventArgs e)
         {
-            Server = new EchoServer_Rfc_862(uiService.Text);
+            var options = new EchoServer_Rfc_862.ServerOptions()
+            {
+                Service = uiService.Text,
+            };
+
+            Server = new EchoServer_Rfc_862(options);
             Server.LogEvent += Server_LogEvent;
             ServerTask = Server.StartAsync();
         }

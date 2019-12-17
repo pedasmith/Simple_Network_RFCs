@@ -18,14 +18,14 @@ namespace Networking.RFC_Foundational
             /// </summary>
             public string DateTimeFormat { get; internal set; } = "O";
             /// <summary>
-            /// Service is the fancy name for "port". Set to 10013 to work with WinRT; RFC compliant value is 13.
+            /// Service is the fancy name for "port". Set to 10013 to work with WinRT; RFC compliant value is 7.
             /// </summary>
-            public string Service { get; set; } = "10013";
+            public string Service { get; set; } = "10007";
 
             /// <summary>
             /// The RFC compatible service.
             /// </summary>
-            public static string RfcService = "13";
+            public static string RfcService = "7";
             /// <summary>
             /// How long should we wait to drain the incoming stream? Setting this large will always result in a slower
             /// client because we can only close the outgoing stream when the incoming stream is drained (or we give up
@@ -77,9 +77,12 @@ namespace Networking.RFC_Foundational
         public delegate void LogEventHandler(object sender, string str);
         public event LogEventHandler LogEvent;
 
-        public EchoServer_Rfc_862(string service = "10007") // actually, the real service is on port 7, but that's restricted
+        public EchoServer_Rfc_862(ServerOptions options = null)
         {
-            Service = service;
+            if (options != null)
+            {
+                Options = options;
+            }
         }
         public void Dispose()
         {
@@ -100,11 +103,6 @@ namespace Networking.RFC_Foundational
         }
 
 
-        /// <summary>
-        /// Service is the fancy name for "port"
-        /// </summary>
-        public string Service;
-
         StreamSocketListener TcpListener = null;
         DatagramSocket UdpListener = null;
 
@@ -122,13 +120,14 @@ namespace Networking.RFC_Foundational
             }
         }
 
-        public async Task StartAsync()
+        public async Task<bool> StartAsync()
         {
+            bool retval = true;
             TcpListener = new StreamSocketListener();
             TcpListener.ConnectionReceived += Listener_ConnectionReceived;
             try
             {
-                await TcpListener.BindServiceNameAsync(Service);
+                await TcpListener.BindServiceNameAsync(Options.Service);
                 {
                     Log ($"Echo Connected on Tcp {TcpListener.Information.LocalPort}");
                 }
@@ -137,20 +136,22 @@ namespace Networking.RFC_Foundational
             {
                 Stats.NExceptions++;
                 Log ($"ERROR: unable to start TCP server {e.Message}");
+                retval = false;
             }
 
             UdpListener = new DatagramSocket();
             UdpListener.MessageReceived += UdpListener_MessageReceived;
             try
             {
-                await UdpListener.BindServiceNameAsync(Service);
+                await UdpListener.BindServiceNameAsync(Options.Service);
                 {
                     Log($"Echo Connected on Udp {UdpListener.Information.LocalPort}");
                 }
             }
             catch (Exception e)
             {
-                Log($"ERROR: unable to start TCP server {e.Message}");
+                Log($"ERROR: unable to start UDP server {e.Message}");
+                retval = false;
             }
 
             var hosts = Windows.Networking.Connectivity.NetworkInformation.GetHostNames();
@@ -158,7 +159,7 @@ namespace Networking.RFC_Foundational
             {
                 Log($"Host: {host.CanonicalName}");
             }
-
+            return retval;
         }
 
         private async void UdpListener_MessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)

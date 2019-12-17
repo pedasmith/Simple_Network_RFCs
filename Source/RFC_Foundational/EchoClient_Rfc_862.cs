@@ -9,7 +9,7 @@ using Windows.Storage.Streams;
 
 namespace Networking.RFC_Foundational
 {
-    public class EchoClient_Rfc_862
+    public class EchoClient_Rfc_862: IDisposable
     {
         /// <summary>
         /// The network value returned by the WriteAsync() calls
@@ -100,6 +100,14 @@ namespace Networking.RFC_Foundational
         public delegate void LogEventHandler(object sender, string str);
         public event LogEventHandler LogEvent;
 
+        public EchoClient_Rfc_862(ClientOptions options = null)
+        {
+            if (options != null)
+            {
+                Options = options;
+            }
+        }
+
         private void Log(string str)
         {
             Log(ClientOptions.Verbosity.Normal, str);
@@ -112,6 +120,11 @@ namespace Networking.RFC_Foundational
                 LogEvent?.Invoke(this, str);
                 System.Diagnostics.Debug.WriteLine(str);
             }
+        }
+
+        public async void Dispose()
+        {
+            await CloseAsync();
         }
 
         public async Task<EchoResult> CloseAsync()
@@ -256,10 +269,22 @@ namespace Networking.RFC_Foundational
 
         private void UdpSocket_MessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
         {
-            var dr = args.GetDataReader();
-            dr.InputStreamOptions = InputStreamOptions.Partial; // | InputStreamOptions.ReadAhead;
-            var udpResult = ReadUdp(dr);
-            UdpResults.TryAdd(sender.Information.LocalPort, udpResult);
+            try
+            {
+                var dr = args.GetDataReader();
+                dr.InputStreamOptions = InputStreamOptions.Partial; // | InputStreamOptions.ReadAhead;
+                var udpResult = ReadUdp(dr);
+                UdpResults.TryAdd(sender.Information.LocalPort, udpResult);
+            }
+            catch (Exception ex)
+            {
+                // This can happen when we send a packet to a correct host (like localhost) but with an
+                // incorrect service. The packet will "bounce", resuluting in a MessageReceived event
+                // but with an args with no real data.
+                var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                var udpResult = EchoResult.MakeFailed(ex, delta);
+                UdpResults.TryAdd(sender.Information.LocalPort, udpResult);
+            }
         }
         private EchoResult ReadUdp(DataReader dr)
         {
