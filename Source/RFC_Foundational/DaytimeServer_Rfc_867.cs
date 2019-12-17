@@ -57,9 +57,20 @@ namespace Networking.RFC_Foundational
 
         public class ServerStats 
         {
-            public int NConnections = 0;
-            public int NResponses = 0;
-            public uint NBytes { get; set; } = 0;
+            // _NConnection and _NResponses must be ordinary number to be interlock-incremented.
+            private int _NConnections = 0;
+            private int _NResponses = 0;
+            public void IncrementNConnections()
+            {
+                Interlocked.Increment(ref _NConnections);
+            }
+            public void IncrementNResponses()
+            {
+                Interlocked.Increment(ref _NResponses);
+            }
+            public int NConnections { get { return _NConnections; } }
+            public int NResponses { get { return _NResponses; } }
+            public uint NBytesRead { get; set; } = 0;
             public int NExceptions { get; set; } = 0;
         };
         public ServerStats Stats { get; internal set; } = new ServerStats();
@@ -92,7 +103,7 @@ namespace Networking.RFC_Foundational
                 UdpListener = null;
             }
         }
-        public enum State { NotStarted, Error, Running };
+
 
 
         StreamSocketListener TcpListener = null;
@@ -161,7 +172,7 @@ namespace Networking.RFC_Foundational
         private async void UdpListener_MessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
         {
             Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP: message recv sender remote port <<{sender.Information.RemotePort}>>");
-            Interlocked.Increment(ref Stats.NConnections);
+            Stats.IncrementNConnections();
 
             HostName remoteHost;
             string remotePort = "not set";
@@ -173,24 +184,24 @@ namespace Networking.RFC_Foundational
                 var os = await sender.GetOutputStreamAsync(remoteHost, remotePort);
                 var dw = new DataWriter(os);
 
-                Task t = DaytimeAsyncUdp(dr, dw, remotePort);
+                Task t = DaytimeUdpAsync(dr, dw, remotePort);
                 await t;
             }
             catch (Exception)
             {
-                Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP EXCEPTION when processing message remote {remotePort} ");
                 Stats.NExceptions++;
+                Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP EXCEPTION when processing message remote {remotePort} ");
             }
         }
 
         private async void Listener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
-            Stats.NConnections++;
+            Stats.IncrementNConnections();
             var socket = args.Socket;
-            Task t = DaytimeAsyncTcp(socket);
+            Task t = DaytimeTcpAsync(socket);
             await t;
         }
-        private async Task DaytimeAsyncTcp(StreamSocket tcpSocket)
+        private async Task DaytimeTcpAsync(StreamSocket tcpSocket)
         {
             // Step 1 is to write the reply.
             // Step 2 is to read (and discard) all incoming data
@@ -201,7 +212,7 @@ namespace Networking.RFC_Foundational
             //var dw = new DataWriter(tcpSocket.OutputStream);
             //dw.WriteString(str);
             //await dw.StoreAsync();
-            Interlocked.Increment(ref Stats.NResponses);
+            Stats.IncrementNResponses();
             //await dw.FlushAsync(); // NOTE: this flush doesn't actually do anything useful.
 
             uint totalBytesWrite = 0;
@@ -231,7 +242,7 @@ namespace Networking.RFC_Foundational
                     if (waitResult == 0)
                     {
                         var result = read.GetResults();
-                        Stats.NBytes += result.Length;
+                        Stats.NBytesRead += result.Length;
                         var partialresult = BufferToString.ToString(result);
                         stringresult += partialresult;
                         Log($"Got data from client: {stringresult} Length={result.Length}");
@@ -274,7 +285,7 @@ namespace Networking.RFC_Foundational
         }
 
 
-        private async Task DaytimeAsyncUdp(DataReader dr, DataWriter dw, string remotePort)
+        private async Task DaytimeUdpAsync(DataReader dr, DataWriter dw, string remotePort)
         {
             // Step 1 is to write the reply.
             // Step 2 is to read (and discard) all incoming data from the single UDP packet
@@ -288,7 +299,7 @@ namespace Networking.RFC_Foundational
                 uint count = dr.UnconsumedBufferLength;
                 if (count > 0)
                 {
-                    Stats.NBytes += count;
+                    Stats.NBytesRead += count;
                     byte[] buffer = new byte[count];
                     dr.ReadBytes(buffer);
                     var stringresult = BufferToString.ToString(buffer);
@@ -302,8 +313,7 @@ namespace Networking.RFC_Foundational
             dw.WriteString(str);
             await dw.StoreAsync();
             await dw.FlushAsync(); // NOTE: this flush doesn't actually do anything useful
-            Interlocked.Increment(ref Stats.NResponses);
-
+            Stats.IncrementNResponses();
 
             dw.Dispose();
             Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP closing down the current writing socket for {str}");

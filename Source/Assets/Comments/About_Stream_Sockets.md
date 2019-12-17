@@ -11,7 +11,7 @@ Some of the hidden surprises:
 
 TCP Sockets can either be closed *gracefull* (good) or *forcefully* (bad). Forcefully also shows up as *reset*. Reset is bad mostly because of server logs: a graceful shutdown is just a shutdown. A forceful shutdown will show up in the IT Admin dashboard.
 
-### Good Exception
+### Good Exceptions
 The object has been closed. (Exception from HRESULT: 0x80000013)
 
 The ECHO server gets this on the client side when you press Close. It's thrown by the DataReader when the TCP socket is tcpSocket.Disposed (aka, closed).
@@ -30,7 +30,7 @@ would get an exception on its reader with forceful close. This is, of course, ba
 
 ### Frustrating exceptions
 
-A task was canceled. 8013153B
+#### A task was canceled. 8013153B
 
 Sigh. SIGH. Network code has lots of polling loops and read/write timeout values; a common way to handle at least
 some of these is with an
@@ -39,4 +39,7 @@ some of these is with an
 when the task is cancelled, instead of being nice and just returning, the Task.Delay throws an exception which
 you have to catch and almost certainly simply ignore.
 
+#### The I/O operation has been aborted because of either a thread exit or an application request. 0x800703E3
+
+This is what you get when you are reading from a datareader on a TCP socket, and then close the socket.
 

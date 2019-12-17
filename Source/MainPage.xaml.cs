@@ -1,6 +1,7 @@
 ﻿using Networking.RFC_Foundational;
 using Networking.RFC_Foundational_Tests;
 using Networking.Simplest_Possible_Versions;
+using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
@@ -91,6 +92,18 @@ namespace Networking
         private async void OnSystemTestClick(object sender, RoutedEventArgs e)
         {
             int nerror = 0;
+            uiSystemTestResults.Text += "EchoTest_Rfc_862.Test: ";
+            Infrastructure.NError = 0;
+            await EchoTest_Rfc_862.Test();
+            nerror += Infrastructure.NError;
+            uiSystemTestResults.Text += $" {nerror}\n";
+
+            nerror += await DoFullTest();
+        }
+
+        private async Task<int> DoFullTest()
+        { 
+            int nerror = 0;
             uiSystemTestResults.Text = "Starting test run\n\n";
 
             Infrastructure.LogError += LogTestError;
@@ -126,6 +139,12 @@ namespace Networking
             nerror += Infrastructure.NError;
             uiSystemTestResults.Text += $" {nerror}\n";
 
+            uiSystemTestResults.Text += "EchoTest_Rfc_862.Test: ";
+            Infrastructure.NError = 0;
+            await EchoTest_Rfc_862.Test();
+            nerror += Infrastructure.NError;
+            uiSystemTestResults.Text += $" {nerror}\n";
+
             uiSystemTestResults.Text += "TimeTest_Rfc_868.Test: ";
             Infrastructure.NError = 0;
             await TimeTest_Rfc_868.Test();
@@ -135,6 +154,8 @@ namespace Networking
             uiSystemTestResults.Text += $"\n\n\nTotal errors: {nerror}";
             Infrastructure.LogError -= LogTestError;
             Infrastructure.LogMessage -= LogTestMessage;
+
+            return nerror;
         }
     }
 }

@@ -119,14 +119,14 @@ namespace Networking.RFC_Foundational
             switch (protocolType)
             {
                 case ProtocolType.Tcp:
-                    return await WriteAsyncTcp(address, service, data); //TODO: rename to WriteTcpAsync everywhere and WriteUdpAsync, too
+                    return await WriteTcpAsync(address, service, data); //TODO: rename to WriteTcpAsync everywhere and WriteUdpAsync, too
                 case ProtocolType.Udp:
-                    return await WriteAsyncUdp(address, service, data);
+                    return await WriteUdpAsync(address, service, data);
             }
             return DaytimeResult.MakeFailed (SocketErrorStatus.SocketTypeNotSupported, 0.0);
         }
 
-        private async Task<DaytimeResult> WriteAsyncTcp(HostName address, string service, string data)
+        private async Task<DaytimeResult> WriteTcpAsync(HostName address, string service, string data)
         {
             var startTime = DateTime.UtcNow;
             try
@@ -159,14 +159,14 @@ namespace Networking.RFC_Foundational
                             (operation, progress) =>
                             {
                                 var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
-                                Log(ClientOptions.Verbosity.Verbose, $"DBG: Daytime Progress count={progress} status={operation.Status} errorcode={err}");
+                                Log(ClientOptions.Verbosity.Verbose, $"Daytime Progress count={progress} status={operation.Status} errorcode={err}");
                             });
                         */
                         read.Progress = (operation, progress) =>
-                            {
-                                var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
-                                Log(ClientOptions.Verbosity.Verbose, $"DBG: Daytime Progress count={progress} status={operation.Status} errorcode={err}");
-                            };
+                        {
+                            var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
+                            Log(ClientOptions.Verbosity.Verbose, $"Daytime Progress count={progress} status={operation.Status} errorcode={err}");
+                        };
                         var result = await read;
                         if (result.Length != 0)
                         {
@@ -187,18 +187,12 @@ namespace Networking.RFC_Foundational
                         Log($"EXCEPTION while reading: {ex2.Message} {ex2.HResult:X}");
 
                         var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
-                        return DaytimeResult.MakeFailed (ex2, faildelta);
+                        return DaytimeResult.MakeFailed(ex2, faildelta);
                     }
                 }
 
                 var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
                 return DaytimeResult.MakeSucceeded(stringresult, delta);
-
-                //var dr = new DataReader(tcpSocket.InputStream);
-                //dr.InputStreamOptions = InputStreamOptions.Partial;
-                //ReadTask = ReadAsync(dr, DataReaderType.Stream);
-                //tcpSocket.Dispose();
-                //tcpSocket = null;
             }
             catch (Exception ex)
             {
@@ -209,10 +203,6 @@ namespace Networking.RFC_Foundational
             }
         }
 
-        private void TcpReadProgress (uint count)
-        {
-
-        }
 
         ConcurrentDictionary<string, DaytimeResult> UdpResults = new ConcurrentDictionary<string, DaytimeResult>();
         DateTime UdpStartTime;
@@ -220,7 +210,7 @@ namespace Networking.RFC_Foundational
         /// <summary>
         /// Sends out a query and then waits for the reply. Waiting on a UDP involves waiting for a message to come back in.
         /// </summary>
-        private async Task<DaytimeResult> WriteAsyncUdp(HostName address, string service, string data)
+        private async Task<DaytimeResult> WriteUdpAsync(HostName address, string service, string data)
         {
             UdpStartTime = DateTime.UtcNow;
             try

@@ -127,6 +127,7 @@
     <Compile Include="RFC_Foundational\TimeServer_Rfc_868.cs" />
     <Compile Include="RFC_Foundational_Tests\CharGenTest_Rfc_864.cs" />
     <Compile Include="RFC_Foundational_Tests\DaytimeTest_Rfc_867.cs" />
+    <Compile Include="RFC_Foundational_Tests\EchoTest_Rfc_862.cs" />
     <Compile Include="RFC_Foundational_Tests\Infrastructure.cs" />
     <Compile Include="RFC_Foundational_Tests\TimeTest_Rfc_868.cs" />
     <Compile Include="RFC_UI_UWP\CharGenClient_Rfc_864_Control.xaml.cs">

@@ -30,7 +30,7 @@ namespace Networking.RFC_UI_UWP
                     client = new EchoClient_Rfc_862();
                     client.LogEvent += Client_LogEvent;
                 }
-                await client.SendAsync(host, service, ptype, data);
+                await client.WriteAsync(host, service, ptype, data);
             }
             catch (Exception ex)
             {

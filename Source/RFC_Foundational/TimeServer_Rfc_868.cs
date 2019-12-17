@@ -206,7 +206,7 @@ namespace Networking.RFC_Foundational
                 var os = await sender.GetOutputStreamAsync(remoteHost, remotePort);
                 var dw = new DataWriter(os);
 
-                Task t = TimeAsyncUdp(dr, dw, remotePort);
+                Task t = TimeUdpAsync(dr, dw, remotePort);
                 await t;
             }
             catch (Exception)
@@ -226,12 +226,12 @@ namespace Networking.RFC_Foundational
         {
             Stats.NConnections++;
             var socket = args.Socket;
-            Task t = TimeAsyncTcp(socket);
+            Task t = TimeTcpAsync(socket);
             await t;
         }
 
 
-        private async Task TimeAsyncTcp(StreamSocket tcpSocket)
+        private async Task TimeTcpAsync(StreamSocket tcpSocket)
         {
             // Step 1 is to write the reply.
             // TODO: CHANGE: fix this comment Step 2 is to read (and discard) all incoming data 
@@ -263,7 +263,7 @@ namespace Networking.RFC_Foundational
         }
 
 
-        private async Task TimeAsyncUdp(DataReader dr, DataWriter dw, string remotePort)
+        private async Task TimeUdpAsync(DataReader dr, DataWriter dw, string remotePort)
         {
             var now = TimeConversion.GetNow();
             dw.WriteUInt32(now);

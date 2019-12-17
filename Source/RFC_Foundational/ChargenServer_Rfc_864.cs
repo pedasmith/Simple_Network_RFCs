@@ -172,7 +172,7 @@ namespace Networking.RFC_Foundational
                 var os = await sender.GetOutputStreamAsync(remoteHost, remotePort);
                 var dw = new DataWriter(os);
 
-                Task t = CharGenAsyncUdp(dr, dw, remotePort);
+                Task t = CharGenUdpAsync(dr, dw, remotePort);
                 await t;
             }
             catch (Exception)
@@ -186,7 +186,7 @@ namespace Networking.RFC_Foundational
         {
             Stats.NConnections++;
             var socket = args.Socket;
-            Task t = CharGenAsyncTcp(socket);
+            Task t = CharGenTcpAsync(socket);
             await t;
         }
 
@@ -279,7 +279,7 @@ namespace Networking.RFC_Foundational
         /// </summary>
         /// <param name="tcpSocket"></param>
         /// <returns></returns>
-        private async Task CharGenAsyncTcp(StreamSocket tcpSocket)
+        private async Task CharGenTcpAsync(StreamSocket tcpSocket)
         {
             CancellationTokenSource cts = new CancellationTokenSource();
             Interlocked.Increment(ref Stats.NResponses);
@@ -305,7 +305,7 @@ namespace Networking.RFC_Foundational
         }
 
 
-        private async Task CharGenAsyncUdp(DataReader dr, DataWriter dw, string remotePort)
+        private async Task CharGenUdpAsync(DataReader dr, DataWriter dw, string remotePort)
         {
             var start = rnd.Next(0, 95);
             var str = MakeAscii(start, 72);

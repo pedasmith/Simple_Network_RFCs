@@ -132,14 +132,14 @@ namespace Networking.RFC_Foundational
             switch (protocolType)
             {
                 case ProtocolType.Tcp:
-                    return await WriteAsyncTcp(address, service);
+                    return await WriteTcpAsync(address, service);
                 case ProtocolType.Udp:
-                    return await WriteAsyncUdp(address, service);
+                    return await WriteUdpAsync(address, service);
             }
             return TimeResult.MakeFailed(SocketErrorStatus.SocketTypeNotSupported, 0.0);
         }
 
-        private async Task<TimeResult> WriteAsyncTcp(HostName address, string service)
+        private async Task<TimeResult> WriteTcpAsync(HostName address, string service)
         {
             var startTime = DateTime.UtcNow;
             try
@@ -181,7 +181,7 @@ namespace Networking.RFC_Foundational
         /// <summary>
         /// Sends out a query and then waits for the reply. Waiting on a UDP involves waiting for a message to come back in.
         /// </summary>
-        private async Task<TimeResult> WriteAsyncUdp(HostName address, string service)
+        private async Task<TimeResult> WriteUdpAsync(HostName address, string service)
         {
             UdpStartTime = DateTime.UtcNow;
             try

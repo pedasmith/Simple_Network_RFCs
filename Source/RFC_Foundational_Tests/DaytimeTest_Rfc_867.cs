@@ -221,8 +221,8 @@ namespace Networking.RFC_Foundational_Tests
                 // the server has to close down reading from the client relatively quickly and can't waste
                 // time for the client to send bytes that probably won't come.
                 var expectedMinBytes = protocol == DaytimeClient_Rfc_867.ProtocolType.Udp ? NBytesWrite : NBytesWrite / 4;
-                Infrastructure.IfTrueError(server.Stats.NBytes > NBytesWrite, $"Server got {server.Stats.NBytes} bytes but expected {NBytesWrite} for {pname}");
-                Infrastructure.IfTrueError(server.Stats.NBytes < expectedMinBytes, $"Server got {server.Stats.NBytes} bytes but expected {NBytesWrite} with a minimum value of {expectedMinBytes} for {pname}");
+                Infrastructure.IfTrueError(server.Stats.NBytesRead > NBytesWrite, $"Server got {server.Stats.NBytesRead} bytes but expected {NBytesWrite} for {pname}");
+                Infrastructure.IfTrueError(server.Stats.NBytesRead < expectedMinBytes, $"Server got {server.Stats.NBytesRead} bytes but expected {NBytesWrite} with a minimum value of {expectedMinBytes} for {pname}");
                 Infrastructure.IfTrueError(server.Stats.NExceptions != 0, $"Server got {server.Stats.NExceptions} exceptions but expected {0} for {pname}");
             }
         }
