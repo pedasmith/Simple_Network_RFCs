@@ -47,7 +47,7 @@ namespace Networking.RFC_Foundational
                     // Now read everything
                     var dr = new DataReader(tcpSocket.InputStream);
                     dr.InputStreamOptions = InputStreamOptions.Partial;
-                    ReadTask = ReadAsync(dr, DataReaderType.Stream);
+                    ReadTask = ReadTcpAsync(dr);
                 }
                 if (protocolType == ProtocolType.Udp && udpSocket == null)
                 {
@@ -62,11 +62,10 @@ namespace Networking.RFC_Foundational
 
                 dw.WriteString(data);
                 await dw.StoreAsync();
-
             }
             catch (Exception ex)
             {
-                Log($"ERROR: Client: sending {data} to {address} exception {ex.Message}");
+                Log($"ERROR: Client: Writing {data} to {address} exception {ex.Message}");
             }
         }
 
@@ -74,22 +73,30 @@ namespace Networking.RFC_Foundational
         {
             var dr = args.GetDataReader();
             dr.InputStreamOptions = InputStreamOptions.Partial; // | InputStreamOptions.ReadAhead;
-            ReadTask = ReadAsync(dr, DataReaderType.Buffer);
+            ReadUdp(dr);
+        }
+        private void ReadUdp(DataReader dr)
+        {
+            uint count = dr.UnconsumedBufferLength;
+            if (count > 0)
+            {
+                byte[] buffer = new byte[dr.UnconsumedBufferLength];
+                dr.ReadBytes(buffer);
+                LogEchoBuffer(buffer);
+            }
+            else // socket is done
+            {
+            }
         }
 
-        public enum DataReaderType { Stream, Buffer };
-
-        private async Task ReadAsync(DataReader dr, DataReaderType drt)
+        private async Task ReadTcpAsync(DataReader dr)
         {
             try
             {
                 uint count = 0;
                 do
                 {
-                    if (drt == DataReaderType.Stream)
-                    {
-                        await dr.LoadAsync(2048);
-                    }
+                    await dr.LoadAsync(2048); // Will throw 'thread exit or app request' when the socket is Disposed
                     count = dr.UnconsumedBufferLength;
                     if (count > 0)
                     {

@@ -73,7 +73,7 @@ namespace Networking.RFC_Foundational_Tests
                 }
 
                 var client = new TimeClient_Rfc_868(clientOptions);
-                var result = await client.SendAsync(host, serverOptions.Service, protocol);
+                var result = await client.WriteAsync(host, serverOptions.Service, protocol);
                 if (!Infrastructure.IfTrueError(!result.Succeeded, "!result.Succeeded"))
                 {
                     Infrastructure.IfTrueError(result.Value == null, "result.Value is null");
@@ -93,7 +93,7 @@ namespace Networking.RFC_Foundational_Tests
             };
 
             var client = new TimeClient_Rfc_868(clientOptions);
-            var result = await client.SendAsync(host, "10013", protocol);
+            var result = await client.WriteAsync(host, "10013", protocol);
             Infrastructure.IfTrueError(result.Succeeded, "result.Succeeded ");
             Infrastructure.IfTrueError(!String.IsNullOrEmpty(result.Value), "result.Value is not null");
             Infrastructure.IfTrueError(result.Error != SocketErrorStatus.HostNotFound, $"result.Error is wrong ({result.Error})");
@@ -120,7 +120,7 @@ namespace Networking.RFC_Foundational_Tests
                 }
 
                 var client = new TimeClient_Rfc_868(clientOptions);
-                var result = await client.SendAsync(host, "79", protocol);
+                var result = await client.WriteAsync(host, "79", protocol);
                 Infrastructure.IfTrueError(result.Succeeded, "result.Succeeded ");
                 Infrastructure.IfTrueError(!String.IsNullOrEmpty(result.Value), "result.Value is not null");
                 // ConnectionRefused is for TCP
@@ -176,7 +176,7 @@ namespace Networking.RFC_Foundational_Tests
                     var allTasks = new Task<TimeClient_Rfc_868.TimeResult>[NBUNCH];
                     for (int j = 0; j < allTasks.Length; j++)
                     {
-                        allTasks[j] = client.SendAsync(host, serverOptions.Service, protocol);
+                        allTasks[j] = client.WriteAsync(host, serverOptions.Service, protocol);
                     }
                     await Task.WhenAll(allTasks);
 

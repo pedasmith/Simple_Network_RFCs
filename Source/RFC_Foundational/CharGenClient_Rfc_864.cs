@@ -41,7 +41,7 @@ namespace Networking.RFC_Foundational
         }
         Task ReadTask = null;
         public enum ProtocolType { Tcp, Udp }
-        public async Task SendAsync(HostName address, string service, ProtocolType protocolType, string data)
+        public async Task WriteAsync(HostName address, string service, ProtocolType protocolType, string data)
         {
             try
             {
@@ -56,7 +56,7 @@ namespace Networking.RFC_Foundational
                     // Now read everything
                     var dr = new DataReader(tcpSocket.InputStream);
                     dr.InputStreamOptions = InputStreamOptions.Partial;
-                    ReadTask = ReadAsync(dr, DataReaderType.Stream);
+                    ReadTask = ReadTcpAsync(dr);
                 }
                 if (protocolType == ProtocolType.Udp && udpSocket == null)
                 {
@@ -72,7 +72,7 @@ namespace Networking.RFC_Foundational
             }
             catch (Exception ex)
             {
-                Log($"ERROR: Client: sending {data} to {address} exception {ex.Message}");
+                Log($"ERROR: Client: writing {data} to {address} exception {ex.Message}");
             }
         }
 
@@ -80,22 +80,31 @@ namespace Networking.RFC_Foundational
         {
             var dr = args.GetDataReader();
             dr.InputStreamOptions = InputStreamOptions.Partial; // | InputStreamOptions.ReadAhead;
-            ReadTask = ReadAsync(dr, DataReaderType.Buffer);
+            ReadUdp(dr);
         }
 
-        public enum DataReaderType { Stream, Buffer };
+        private void ReadUdp(DataReader dr)
+        {
+            uint count = dr.UnconsumedBufferLength;
+            if (count > 0)
+            {
+                byte[] buffer = new byte[dr.UnconsumedBufferLength];
+                dr.ReadBytes(buffer);
+                LogCharGenBuffer(buffer);
+            }
+            else // socket is done TODO: change comment everywhere for UDP
+            {
+            }
+        }
 
-        private async Task ReadAsync(DataReader dr, DataReaderType drt)
+        private async Task ReadTcpAsync(DataReader dr)
         {
             try
             {
                 uint count = 0;
                 do
                 {
-                    if (drt == DataReaderType.Stream)
-                    {
-                        await dr.LoadAsync(2048);
-                    }
+                    await dr.LoadAsync(2048); // Will throw 'thread exit or app request' when the socket is Disposed
                     count = dr.UnconsumedBufferLength;
                     if (count > 0)
                     {

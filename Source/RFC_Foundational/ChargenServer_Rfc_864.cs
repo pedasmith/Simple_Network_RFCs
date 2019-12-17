@@ -19,14 +19,19 @@ namespace Networking.RFC_Foundational
             public enum Verbosity { None, Normal, Verbose }
             public Verbosity LoggingLevel { get; set; } = ServerOptions.Verbosity.Normal;
 
-            public string DateTimeFormat { get; set; } = "O"; //TODO: datetimeformat is junk now!
             public enum PatternType {  Classic72 };
             public PatternType OutputPattern { get; set; } = PatternType.Classic72;
-
             public static string Ascii95 = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+            
+            /// <summary>
+            /// Says how quickly the server will send data to the client. This isn't a speed competition,
+            /// so by default I keep the speed low.
+            /// TODO: when set to 0, does the code still work?
+            /// </summary>
+            public int TimeBetweenWritesInMilliseconds = 500; 
 
             /// <summary>
-            /// Service is the fancy name for "port". Set to 10013 to work with WinRT; RFC compliant value is 13.
+            /// Service is the fancy name for "port". Set to 10019 to work with WinRT; RFC compliant value is 19.
             /// </summary>
             public string Service { get; set; } = "10019";
 
@@ -35,30 +40,14 @@ namespace Networking.RFC_Foundational
             /// </summary>
             public static string RfcService = "19";
             /// <summary>
-            /// How long should we wait to drain the incoming stream? Setting this large will always result in a slower
-            /// client because we can only close the outgoing stream when the incoming stream is drained (or we give up
-            /// on draining). Setting this to zero is OK.
+            /// Unlike the ECHO protocol, CharGen will keep producing output until the input is "done". 
+            /// Normally we can expect that zero bytes will be sent; we're simply waiting for the socket
+            /// to either be closed gracefully or to be reset.
             /// 
-            /// Default is 10 milliseconds
+            /// Default is 500 milliseconds. 
             /// </summary>
-            public int TcpReadTimeInMilliseconds { get; set; } = 10;
+            public int TcpReadPollTimeInMilliseconds { get; set; } = 500;
 
-            /// <summary>
-            /// Says how long to pause before closing the outgoing stream. There isn't actually a way
-            /// to close a Tcp stream "nicely" at the guaranteed correct time. When negative, won't pause at all.
-            /// Default is -1.
-            /// </summary>
-            public int TcpPauseBeforeCloseTimeInMilliseconds { get; set; } = -1;
-
-            /// <summary>
-            /// How long to wait while waiting for the socket write to have a complete progress.
-            /// Often, the progress callback will never be called, so waiting for "real" data is
-            /// not smart; this timer will set a maximum wait time. When set to a negative number,
-            /// the socket won't wait for the write to be complete.
-            /// 
-            /// Default is -1.
-            /// </summary>
-            public int TcpWriteTimeInMilliseconds { get; set; } = -1;
         }
         public ServerOptions Options { get; internal set; } = new ServerOptions();
 
@@ -66,7 +55,8 @@ namespace Networking.RFC_Foundational
         {
             public int NConnections = 0;
             public int NResponses = 0;
-            public uint NBytes { get; set; } = 0;
+            public uint NBytesRead { get; set; } = 0;
+            public uint NBytesSent { get; set; } = 0;
             public int NExceptions { get; set; } = 0;
         };
         public ServerStats Stats { get; internal set; } = new ServerStats();
@@ -158,6 +148,7 @@ namespace Networking.RFC_Foundational
                 retval = false;
             }
 
+            // TODO: make this just a normal 'thing' in the client?
             var hosts = Windows.Networking.Connectivity.NetworkInformation.GetHostNames();
             foreach (var host in hosts)
             {
@@ -198,86 +189,119 @@ namespace Networking.RFC_Foundational
             Task t = CharGenAsyncTcp(socket);
             await t;
         }
-        private async Task CharGenAsyncTcp(StreamSocket tcpSocket)
+
+        private async Task CharGenReadTcpAsync(StreamSocket tcpSocket, CancellationToken ct)
         {
-            int start = 0;
-            var str = MakeAscii(start, 72);
-
-            //NOTE: here's how to write data using a DataWriter
-            //var dw = new DataWriter(tcpSocket.OutputStream);
-            //dw.WriteString(str);
-            //await dw.StoreAsync();
-            Interlocked.Increment(ref Stats.NResponses);
-            //await dw.FlushAsync(); // NOTE: this flush doesn't actually do anything useful.
-
-            uint totalBytesSent = 0;
-            var writeBuffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(str, Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
-            var writeTask = tcpSocket.OutputStream.WriteAsync(writeBuffer);
-            var bytesToSend = writeBuffer.Length;
-            writeTask.Progress += (operation, progress) =>
-            {
-                totalBytesSent = progress;
-            };
-            await tcpSocket.OutputStream.FlushAsync();
-
-            //TODO: the actual protocol is to keep on writing until the input is closed.
-
-            // Now read in all of the data that might have been passed but only for a little while.
-            // CharGen doesn't use this information at all.
+            // Continuously read in all information
             var s = tcpSocket.InputStream;
             var buffer = new Windows.Storage.Streams.Buffer(2048);
 
-            string stringresult = "";
-            var keepGoing = Options.TcpReadTimeInMilliseconds >= 0; // Read time is negative? Then don't read at all!
-            while (keepGoing)
+            var readOk = true;
+            while (readOk && !ct.IsCancellationRequested)
             {
                 try
                 {
                     var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
-                    var waitResult = Task.WaitAny(new Task[] { read.AsTask() }, Options.TcpReadTimeInMilliseconds);
+                    var waitResult = Task.WaitAny(new Task[] { read.AsTask() }, Options.TcpReadPollTimeInMilliseconds);
                     if (waitResult == 0)
                     {
                         var result = read.GetResults();
-                        Stats.NBytes += result.Length;
+                        Stats.NBytesRead += result.Length;
+                        if (result.Length == 0)
+                        {
+                            readOk = false; // Client must have closed the socket; stop the server
+                        }
                         var partialresult = BufferToString.ToString(result);
-                        stringresult += partialresult;
-                        Log($"Got data from client: {stringresult} Length={result.Length}");
                     }
                     else
                     {
-                        keepGoing = false;
+                        // Done with this polling loop
                     }
                 }
                 catch (Exception ex2)
                 {
                     Stats.NExceptions++;
-                    keepGoing = false;
+                    readOk = false;
                     Log($"EXCEPTION while reading: {ex2.Message} {ex2.HResult:X}");
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Continuously writes data over a streamsocket until the cancellation token is reset
+        /// </summary>
+        /// <param name="tcpSocket"></param>
+        /// <returns></returns>
+        private async Task CharGenWriteTcpAsync(StreamSocket tcpSocket, CancellationToken ct)
+        {
+            int start = 0;
+            bool writeOk = true;
+            while (writeOk && !ct.IsCancellationRequested)
+            {
+                var str = MakeAscii(start, 72);
+                var writeBuffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(str, Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
+                try
+                {
+                    var nbytes = await tcpSocket.OutputStream.WriteAsync(writeBuffer);
+                    Stats.NBytesSent += nbytes;
+                    start++;
+                }
+                catch (Exception ex2)
+                {
+                    Stats.NExceptions++;
+                    writeOk = false;
+                    Log($"EXCEPTION while writing: {ex2.Message} {ex2.HResult:X}");
+                }
+                if (!ct.IsCancellationRequested)
+                {
+                    // I'm not a fan of how a Task.Delay with a CancellationToken will throw
+                    // an exception when the cancellation token is cancelled. 
+                    try
+                    {
+                        await Task.Delay(Options.TimeBetweenWritesInMilliseconds, ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        if ((uint)ex.HResult != 0x8013153B)
+                        {
+                            Log($"EXCEPTION while delay-writing: {ex.Message} {ex.HResult:X}");
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Main TCP loop; has two tasks, one for reading (which triggers when the client
+        /// closes their side of the socket) and one for writing (which must be cancelled when
+        /// the socket is closed).
+        /// </summary>
+        /// <param name="tcpSocket"></param>
+        /// <returns></returns>
+        private async Task CharGenAsyncTcp(StreamSocket tcpSocket)
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            Interlocked.Increment(ref Stats.NResponses);
+
+            Task[] tasks = new Task[]
+            {
+                CharGenWriteTcpAsync(tcpSocket, cts.Token), //TODO: call it Write everywhere, not Send/Sent
+                CharGenReadTcpAsync(tcpSocket, cts.Token),
+            };
+            // Wait for one task to finish -- mostly likely the reader which will stop
+            // when the client closes their side of the socket.
+            var done = Task.WaitAny(tasks);
+            // If you don't cancel here, the writer will just keep on writing which in turn
+            // will cause the socket to be forcefully closed when we try to write to a socket
+            // which is in the process of being closed.
+            cts.Cancel();
+            Task.WaitAll(tasks);
 
             Log(ServerOptions.Verbosity.Verbose, $"SERVER: TCP Stream closing down the current writing socket");
 
-            // Wait for the write buffer to be completely written, but only wait a short while.
-            // The actual progress is limited because not all writes will trigger the progress indicator.
-            // Works fine with no waiting (WriteTimeInMilliseconds set to -1)
-            int currWait = 0;
-            while (totalBytesSent != bytesToSend && currWait < Options.TcpWriteTimeInMilliseconds)
-            {
-                await Task.Delay(10);
-                currWait += 10;
-            }
-            if (totalBytesSent != bytesToSend && Options.TcpWriteTimeInMilliseconds >= 0)
-            {
-                Log(ServerOptions.Verbosity.Verbose, $"SERVER: incomplete send {totalBytesSent} of {bytesToSend} wait time {Options.TcpWriteTimeInMilliseconds}");
-            }
-
-            if (Options.TcpPauseBeforeCloseTimeInMilliseconds >= 0)
-            {
-                await Task.Delay(Options.TcpPauseBeforeCloseTimeInMilliseconds);
-            }
-            tcpSocket.Dispose(); // The dispose is critical; without it the client won't ever finish reading our output
-
+            //TODO: it is critical?
+            tcpSocket.Dispose(); // The dispose is hardly critical; without it the client won't ever finish reading our output
         }
 
 
@@ -340,11 +364,16 @@ namespace Networking.RFC_Foundational
 
         }
 
+        /// <summary>
+        /// Helper routine with radically simplified parameters for testing the Ascii lines.
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="length"></param>
+        /// <param name="expected"></param>
         private static void TestMakeAsciiOne(int start, int length, string expected)
         {
             var actual = MakeAscii(start, length);
             Infrastructure.IfTrueError(actual != expected, $"MakeAscii({start},{length}) should be [{expected}] but actually got [{actual}]");
-
         }
     }
 }

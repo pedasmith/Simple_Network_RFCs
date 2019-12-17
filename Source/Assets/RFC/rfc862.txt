@@ -15,7 +15,7 @@ the ARPA Internet that choose to implement an Echo Protocol are expected
 to adopt and implement this standard.
 
 A very useful debugging and measurement tool is an echo service.  An
-echo service simply sends back to the originating source any data it
+echo service simply writes back to the originating source any data it
 receives.
 
 TCP Based Echo Service

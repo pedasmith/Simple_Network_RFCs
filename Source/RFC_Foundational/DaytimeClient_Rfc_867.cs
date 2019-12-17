@@ -11,7 +11,7 @@ namespace Networking.RFC_Foundational
     public class DaytimeClient_Rfc_867
     {
         /// <summary>
-        /// The network value returned by the SendAsync() calls
+        /// The network value returned by the WriteAsync() calls
         /// </summary>
         public class DaytimeResult
         {
@@ -78,7 +78,7 @@ namespace Networking.RFC_Foundational
 
         public class ClientStats
         {
-            public int NSends { get; set; } = 0;
+            public int NWrites { get; set; } = 0;
             public int NExceptions { get; set; } = 0;
         }
         public ClientStats Stats { get; internal set; } = new ClientStats();
@@ -114,19 +114,19 @@ namespace Networking.RFC_Foundational
         }
 
         public enum ProtocolType { Tcp, Udp }
-        public async Task<DaytimeResult> SendAsync(HostName address, string service = "10013", ProtocolType protocolType=ProtocolType.Udp, string data="")
+        public async Task<DaytimeResult> WriteAsync(HostName address, string service = "10013", ProtocolType protocolType=ProtocolType.Udp, string data="")
         {
             switch (protocolType)
             {
                 case ProtocolType.Tcp:
-                    return await SendAsyncTcp(address, service, data);
+                    return await WriteAsyncTcp(address, service, data); //TODO: rename to WriteTcpAsync everywhere and WriteUdpAsync, too
                 case ProtocolType.Udp:
-                    return await SendAsyncUdp(address, service, data);
+                    return await WriteAsyncUdp(address, service, data);
             }
             return DaytimeResult.MakeFailed (SocketErrorStatus.SocketTypeNotSupported, 0.0);
         }
 
-        private async Task<DaytimeResult> SendAsyncTcp(HostName address, string service, string data)
+        private async Task<DaytimeResult> WriteAsyncTcp(HostName address, string service, string data)
         {
             var startTime = DateTime.UtcNow;
             try
@@ -140,7 +140,7 @@ namespace Networking.RFC_Foundational
                     dw.WriteString(data);
                     await dw.StoreAsync();
                 }
-                Stats.NSends++;
+                Stats.NWrites++;
 
                 // Now read everything
                 var s = tcpSocket.InputStream;
@@ -203,7 +203,7 @@ namespace Networking.RFC_Foundational
             catch (Exception ex)
             {
                 Stats.NExceptions++;
-                Log($"ERROR: Client: sending {data} to {address} exception {ex.Message}");
+                Log($"ERROR: Client: Writing {data} to {address} exception {ex.Message}");
                 var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
                 return DaytimeResult.MakeFailed(ex, delta);
             }
@@ -220,7 +220,7 @@ namespace Networking.RFC_Foundational
         /// <summary>
         /// Sends out a query and then waits for the reply. Waiting on a UDP involves waiting for a message to come back in.
         /// </summary>
-        private async Task<DaytimeResult> SendAsyncUdp(HostName address, string service, string data)
+        private async Task<DaytimeResult> WriteAsyncUdp(HostName address, string service, string data)
         {
             UdpStartTime = DateTime.UtcNow;
             try
@@ -237,13 +237,13 @@ namespace Networking.RFC_Foundational
                     var dw = new DataWriter(udpSocket.OutputStream);
                     dw.WriteString(data); 
                     await dw.StoreAsync();
-                    Stats.NSends++;
+                    Stats.NWrites++;
                 }
                 else
                 {
                     var b = new Windows.Storage.Streams.Buffer(0);
                     await udpSocket.OutputStream.WriteAsync(b);
-                    Stats.NSends++;
+                    Stats.NWrites++;
                 }
                 Log(ClientOptions.Verbosity.Verbose, $"Client: UDP: Sent request on local port {udpSocket.Information.LocalPort} request {data}");
 
@@ -272,7 +272,7 @@ namespace Networking.RFC_Foundational
             catch (Exception ex)
             {
                 Stats.NExceptions++;
-                Log($"ERROR: Client: sending {data} to {address} exception {ex.Message}");
+                Log($"ERROR: Client: Writing {data} to {address} exception {ex.Message}");
                 var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
                 return DaytimeResult.MakeFailed(ex, delta);
             }

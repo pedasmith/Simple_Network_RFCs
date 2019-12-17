@@ -77,7 +77,7 @@ namespace Networking.RFC_Foundational
 
             //var dw = new DataWriter(sender.OutputStream);
             var dw = new DataWriter(os);
-            Task t = EchoAsync("UDP", dr, DataReaderType.Buffer, dw);
+            Task t = EchoUdpAsync("UDP", dr, dw);
             await t;
         }
 
@@ -88,22 +88,19 @@ namespace Networking.RFC_Foundational
             var dr = new DataReader(socket.InputStream);
             dr.InputStreamOptions = InputStreamOptions.Partial; // | InputStreamOptions.ReadAhead;
             var dw = new DataWriter(socket.OutputStream);
-            Task t = EchoAsync("TCP", dr, DataReaderType.Stream, dw);
+            Task t = EchoTcpAsync("TCP", dr, dw);
             await t;
         }
-        public enum DataReaderType { Stream, Buffer };
 
-        private async Task EchoAsync (string type, DataReader dr, DataReaderType drt, DataWriter dw)
+
+        private async Task EchoTcpAsync (string type, DataReader dr, DataWriter dw)
         {
             try
             {
                 uint count = 0;
                 do
                 {
-                    if (drt == DataReaderType.Stream)
-                    {
-                        await dr.LoadAsync(2048);
-                    }
+                    await dr.LoadAsync(2048); // Will load nothing when the client closes gracefully.
                     count = dr.UnconsumedBufferLength;
                     if (count > 0)
                     {
@@ -134,6 +131,33 @@ namespace Networking.RFC_Foundational
                 Log($"SERVER: ECHO: {type} exception while reading {ex.Message}");
             }
         }
+
+        private async Task EchoUdpAsync(string type, DataReader dr, DataWriter dw)
+        {
+            uint count = dr.UnconsumedBufferLength;
+            if (count > 0)
+            {
+                byte[] buffer = new byte[count];
+                dr.ReadBytes(buffer);
+                LogEchoBuffer(buffer);
+                try
+                {
+                    dw.WriteBytes(buffer);
+                    await dw.StoreAsync();
+                }
+                catch (Exception ex)
+                {
+                    Log($"SERVER: ECHO: {type} exception while writing {ex.Message}");
+                }
+            }
+            else // socket is done
+            {
+                Log($"SERVER: {type} closing down the current reading socket");
+                await dw.FlushAsync();
+                dw.Dispose();
+            }
+        }
+
 
         private void LogEchoBuffer (byte[] buffer)
         {

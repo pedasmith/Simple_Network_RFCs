@@ -15,7 +15,7 @@ namespace Networking.RFC_Foundational
             public enum Verbosity {  None, Normal, Verbose}
             public Verbosity LoggingLevel { get; set; } = ServerOptions.Verbosity.Normal;
             /// <summary>
-            /// DateTime format to use when sending back data. O=round trip format  F=common format.
+            /// DateTime format to use when writing back data. O=round trip format  F=common format.
             /// </summary>
             public string DateTimeFormat { get; internal set; } = "O";
             /// <summary>
@@ -192,7 +192,7 @@ namespace Networking.RFC_Foundational
         }
         private async Task DaytimeAsyncTcp(StreamSocket tcpSocket)
         {
-            // Step 1 is to send the reply.
+            // Step 1 is to write the reply.
             // Step 2 is to read (and discard) all incoming data
             var time = DateTime.Now;
             var str = time.ToString(Options.DateTimeFormat); // "F" is the default
@@ -204,13 +204,13 @@ namespace Networking.RFC_Foundational
             Interlocked.Increment(ref Stats.NResponses);
             //await dw.FlushAsync(); // NOTE: this flush doesn't actually do anything useful.
 
-            uint totalBytesSent = 0;
+            uint totalBytesWrite = 0;
             var writeBuffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(str, Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
             var writeTask = tcpSocket.OutputStream.WriteAsync(writeBuffer);
-            var bytesToSend = writeBuffer.Length;
+            var bytesToWrite = writeBuffer.Length;
             writeTask.Progress += (operation, progress) => 
             {
-                totalBytesSent = progress;
+                totalBytesWrite = progress;
             };
             await tcpSocket.OutputStream.FlushAsync();
 
@@ -255,14 +255,14 @@ namespace Networking.RFC_Foundational
             // The actual progress is limited because not all writes will trigger the progress indicator.
             // Works fine with no waiting (WriteTimeInMilliseconds set to -1)
             int currWait = 0;
-            while (totalBytesSent != bytesToSend && currWait < Options.TcpWriteTimeInMilliseconds)
+            while (totalBytesWrite != bytesToWrite && currWait < Options.TcpWriteTimeInMilliseconds)
             {
                 await Task.Delay(10);
                 currWait += 10;
             }
-            if (totalBytesSent != bytesToSend && Options.TcpWriteTimeInMilliseconds >= 0)
+            if (totalBytesWrite != bytesToWrite && Options.TcpWriteTimeInMilliseconds >= 0)
             {
-                Log(ServerOptions.Verbosity.Verbose, $"SERVER: incomplete send {totalBytesSent} of {bytesToSend} wait time {Options.TcpWriteTimeInMilliseconds}");
+                Log(ServerOptions.Verbosity.Verbose, $"SERVER: incomplete write {totalBytesWrite} of {bytesToWrite} wait time {Options.TcpWriteTimeInMilliseconds}");
             }
 
             if (Options.TcpPauseBeforeCloseTimeInMilliseconds >= 0)
@@ -276,7 +276,7 @@ namespace Networking.RFC_Foundational
 
         private async Task DaytimeAsyncUdp(DataReader dr, DataWriter dw, string remotePort)
         {
-            // Step 1 is to send the reply.
+            // Step 1 is to write the reply.
             // Step 2 is to read (and discard) all incoming data from the single UDP packet
             var time = DateTime.Now;
             var str = time.ToString(Options.DateTimeFormat); // "F" is the default

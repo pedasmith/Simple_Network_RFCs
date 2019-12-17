@@ -14,7 +14,7 @@ namespace Networking.Simplest_Possible_Versions
                 await server.StartAsync();
 
                 var client = new DaytimeClient_Rfc_867();
-                var result = await client.SendAsync(new Windows.Networking.HostName("localhost"));
+                var result = await client.WriteAsync(new Windows.Networking.HostName("localhost"));
 
                 return result;
             }

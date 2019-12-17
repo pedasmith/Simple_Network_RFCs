@@ -233,8 +233,8 @@ namespace Networking.RFC_Foundational
 
         private async Task TimeAsyncTcp(StreamSocket tcpSocket)
         {
-            // Step 1 is to send the reply.
-            // CHANGE: fix this comment Step 2 is to read (and discard) all incoming data 
+            // Step 1 is to write the reply.
+            // TODO: CHANGE: fix this comment Step 2 is to read (and discard) all incoming data 
 
 
             //NOTE: here's how to write data using a DataWriter

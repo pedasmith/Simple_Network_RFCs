@@ -60,7 +60,7 @@ namespace Networking.RFC_UI_UWP
                     client = new TimeClient_Rfc_868();
                     client.LogEvent += Client_LogEvent;
                 }
-                await client.SendAsync(host, service, ptype);
+                await client.WriteAsync(host, service, ptype);
             }
             catch (Exception ex)
             {
@@ -85,7 +85,10 @@ namespace Networking.RFC_UI_UWP
 
         private async void OnClose(object sender, RoutedEventArgs e)
         {
-            await client.CloseAsync();
+            if (client != null)
+            {
+                await client.CloseAsync();
+            }
             client = null;
         }
         private void OnHostsListSelectionChanged(object sender, SelectionChangedEventArgs e)

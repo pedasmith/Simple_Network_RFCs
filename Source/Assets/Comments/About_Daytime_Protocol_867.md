@@ -1,6 +1,6 @@
 # About the Daytime Protocol 867
 
-The Daytime protocol (RFC 867) is one of the "wish they hadn't" kind of specs. On the surface, it is a simple spec in TCP: the client opens a connection, optionally sends some bytes, and the server just sends back a string in whatever format and closes the connection.
+The Daytime protocol (RFC 867) is one of the "wish they hadn't" kind of specs. On the surface, it is a simple spec in TCP: the client opens a connection, optionally writes some bytes, and the server just writes back a string in whatever format and closes the connection.
 
 See the problem? The server can't close the connection until it has completely drained the incoming bytes. Likewise, the client cannot close the connection until the server has sent  all the bytes. Each is edlessly waiting for the other. 
 
@@ -16,7 +16,7 @@ The simplest possible code for the Daytime classes looks like this:
             await server.StartAsync();
 
             var client = new DaytimeClient_Rfc_867();
-            var result = await client.SendAsync(new Windows.Networking.HostName("localhost"));
+            var result = await client.WriteAsync(new Windows.Networking.HostName("localhost"));
 
             return result;
             

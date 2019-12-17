@@ -10,7 +10,7 @@ namespace Networking.RFC_Foundational
     public class TimeClient_Rfc_868
     {
         /// <summary>
-        /// The network value returned by the SendAsync() calls
+        /// The network value returned by the WriteAsync() calls
         /// </summary>
         public class TimeResult
         {
@@ -91,7 +91,7 @@ namespace Networking.RFC_Foundational
 
         public class ClientStats
         {
-            public int NSends { get; set; } = 0;
+            public int NWrites { get; set; } = 0;
             public int NExceptions { get; set; } = 0;
         }
         public ClientStats Stats { get; internal set; } = new ClientStats();
@@ -127,26 +127,26 @@ namespace Networking.RFC_Foundational
         }
 
         public enum ProtocolType { Tcp, Udp }
-        public async Task<TimeResult> SendAsync(HostName address, string service = "10037", ProtocolType protocolType = ProtocolType.Udp)
+        public async Task<TimeResult> WriteAsync(HostName address, string service = "10037", ProtocolType protocolType = ProtocolType.Udp)
         {
             switch (protocolType)
             {
                 case ProtocolType.Tcp:
-                    return await SendAsyncTcp(address, service);
+                    return await WriteAsyncTcp(address, service);
                 case ProtocolType.Udp:
-                    return await SendAsyncUdp(address, service);
+                    return await WriteAsyncUdp(address, service);
             }
             return TimeResult.MakeFailed(SocketErrorStatus.SocketTypeNotSupported, 0.0);
         }
 
-        private async Task<TimeResult> SendAsyncTcp(HostName address, string service)
+        private async Task<TimeResult> WriteAsyncTcp(HostName address, string service)
         {
             var startTime = DateTime.UtcNow;
             try
             {
                 var tcpSocket = new StreamSocket();
                 await tcpSocket.ConnectAsync(address, service);
-                Stats.NSends++;
+                Stats.NWrites++;
 
                 // Now read everything
                 var s = tcpSocket.InputStream;
@@ -164,7 +164,7 @@ namespace Networking.RFC_Foundational
             catch (Exception ex)
             {
                 Stats.NExceptions++;
-                Log($"ERROR: Client: sending to {address} exception {ex.Message}");
+                Log($"ERROR: Client: Writing to {address} exception {ex.Message}");
                 var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
                 return TimeResult.MakeFailed(ex, delta);
             }
@@ -181,7 +181,7 @@ namespace Networking.RFC_Foundational
         /// <summary>
         /// Sends out a query and then waits for the reply. Waiting on a UDP involves waiting for a message to come back in.
         /// </summary>
-        private async Task<TimeResult> SendAsyncUdp(HostName address, string service)
+        private async Task<TimeResult> WriteAsyncUdp(HostName address, string service)
         {
             UdpStartTime = DateTime.UtcNow;
             try
@@ -190,10 +190,10 @@ namespace Networking.RFC_Foundational
                 await udpSocket.ConnectAsync(address, service);
                 udpSocket.MessageReceived += UdpSocket_MessageReceived;
 
-                // this is how to send an empty (blank) UDP datagram
+                // this is how to write an empty (blank) UDP datagram
                 var b = new Windows.Storage.Streams.Buffer(0);
                 await udpSocket.OutputStream.WriteAsync(b);
-                Stats.NSends++;
+                Stats.NWrites++;
 
                 Log(ClientOptions.Verbosity.Verbose, $"Client: UDP: Sent request on local port {udpSocket.Information.LocalPort}");
 
@@ -222,7 +222,7 @@ namespace Networking.RFC_Foundational
             catch (Exception ex)
             {
                 Stats.NExceptions++;
-                Log($"ERROR: Client: sending to {address} exception {ex.Message}");
+                Log($"ERROR: Client: Writing to {address} exception {ex.Message}");
                 var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
                 return TimeResult.MakeFailed(ex, delta);
             }

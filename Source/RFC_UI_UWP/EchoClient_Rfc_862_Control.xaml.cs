@@ -34,7 +34,7 @@ namespace Networking.RFC_UI_UWP
             }
             catch (Exception ex)
             {
-                Client_LogEvent (this, $"ERROR: Client: Send exception {ex.Message} for host {uiAddress.Text}");
+                Client_LogEvent (this, $"ERROR: Client: Write exception {ex.Message} for host {uiAddress.Text}");
             }
         }
 
@@ -53,7 +53,10 @@ namespace Networking.RFC_UI_UWP
         }
         private async void OnClose(object sender, RoutedEventArgs e)
         {
-            await client.CloseAsync();
+            if (client != null)
+            {
+                await client.CloseAsync();
+            }
             client = null;
         }
 

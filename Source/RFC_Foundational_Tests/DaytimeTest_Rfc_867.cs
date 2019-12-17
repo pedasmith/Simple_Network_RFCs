@@ -73,7 +73,7 @@ namespace Networking.RFC_Foundational_Tests
                 }
 
                 var client = new DaytimeClient_Rfc_867(clientOptions);
-                var result = await client.SendAsync(host, serverOptions.Service, protocol, "");
+                var result = await client.WriteAsync(host, serverOptions.Service, protocol, "");
                 if (!Infrastructure.IfTrueError(!result.Succeeded, "!result.Succeeded"))
                 {
                     Infrastructure.IfTrueError(result.Value == null, "result.Value is null");
@@ -93,7 +93,7 @@ namespace Networking.RFC_Foundational_Tests
             };
 
             var client = new DaytimeClient_Rfc_867(clientOptions);
-            var result = await client.SendAsync(host, "10013", protocol, "");
+            var result = await client.WriteAsync(host, "10013", protocol, "");
             Infrastructure.IfTrueError(result.Succeeded, "result.Succeeded ");
             Infrastructure.IfTrueError(!String.IsNullOrEmpty(result.Value), "result.Value is not null");
             Infrastructure.IfTrueError(result.Error != SocketErrorStatus.HostNotFound, $"result.Error is wrong ({result.Error})");
@@ -120,7 +120,7 @@ namespace Networking.RFC_Foundational_Tests
                 }
 
                 var client = new DaytimeClient_Rfc_867(clientOptions);
-                var result = await client.SendAsync(host, "79", protocol, "");
+                var result = await client.WriteAsync(host, "79", protocol, "");
                 Infrastructure.IfTrueError(result.Succeeded, "result.Succeeded ");
                 Infrastructure.IfTrueError(!String.IsNullOrEmpty(result.Value), "result.Value is not null");
                 // ConnectionRefused is for TCP
@@ -144,7 +144,7 @@ namespace Networking.RFC_Foundational_Tests
             const double ALLOWED_TIME = 20.0; // Normally we expect everything to be fast. No so much for a stress test!
             const int ALLOWED_CONN_RESET = (NLOOP * NBUNCH) * 5 / 100; // Allow 5% conn reset
 
-            int NBytesSent = 0;
+            int NBytesWrite = 0;
             int NConnReset = 0;
             var host = new HostName("localhost");
             var serverOptions = new DaytimeServer_Rfc_867.ServerOptions()
@@ -177,8 +177,8 @@ namespace Networking.RFC_Foundational_Tests
                     for (int j = 0; j < allTasks.Length; j++)
                     {
                         var send = $"ABC-Loop {i} Item {j}";
-                        NBytesSent += send.Length;
-                        allTasks[j] = client.SendAsync(host, serverOptions.Service, protocol, send);
+                        NBytesWrite += send.Length;
+                        allTasks[j] = client.WriteAsync(host, serverOptions.Service, protocol, send);
                     }
                     await Task.WhenAll(allTasks);
 
@@ -220,9 +220,9 @@ namespace Networking.RFC_Foundational_Tests
                 // Why is the expected not equal to the NBytesSent? Because TCP has a weird timing thing:
                 // the server has to close down reading from the client relatively quickly and can't waste
                 // time for the client to send bytes that probably won't come.
-                var expectedMinBytes = protocol == DaytimeClient_Rfc_867.ProtocolType.Udp ? NBytesSent : NBytesSent / 4;
-                Infrastructure.IfTrueError(server.Stats.NBytes > NBytesSent, $"Server got {server.Stats.NBytes} bytes but expected {NBytesSent} for {pname}");
-                Infrastructure.IfTrueError(server.Stats.NBytes < expectedMinBytes, $"Server got {server.Stats.NBytes} bytes but expected {NBytesSent} with a minimum value of {expectedMinBytes} for {pname}");
+                var expectedMinBytes = protocol == DaytimeClient_Rfc_867.ProtocolType.Udp ? NBytesWrite : NBytesWrite / 4;
+                Infrastructure.IfTrueError(server.Stats.NBytes > NBytesWrite, $"Server got {server.Stats.NBytes} bytes but expected {NBytesWrite} for {pname}");
+                Infrastructure.IfTrueError(server.Stats.NBytes < expectedMinBytes, $"Server got {server.Stats.NBytes} bytes but expected {NBytesWrite} with a minimum value of {expectedMinBytes} for {pname}");
                 Infrastructure.IfTrueError(server.Stats.NExceptions != 0, $"Server got {server.Stats.NExceptions} exceptions but expected {0} for {pname}");
             }
         }
