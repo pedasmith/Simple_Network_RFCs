@@ -60,6 +60,8 @@ namespace Networking.RFC_Foundational
                 }
                 if (protocolType == ProtocolType.Udp && udpSocket == null)
                 {
+                    // TODO: wrong; pressing Write twice in a row gets only one resut
+                    // TODO: wrong; should return the values
                     udpSocket = new DatagramSocket();
                     await udpSocket.ConnectAsync(address, service);
                     var b = new Windows.Storage.Streams.Buffer(0);

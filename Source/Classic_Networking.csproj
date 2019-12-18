@@ -296,7 +296,8 @@
     <Content Include="Assets\Comments\About_Datagram_Sockets.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <None Include="Assets\Comments\About_Daytime_Protocol_867.md" />
+    <None Include="Assets\Comments\About_Daytime_Protocol_Rfc_867.md" />
+    <None Include="Assets\Comments\About_Echo_Protocol_Rfc_862.md" />
     <None Include="Assets\Comments\About_Stream_Sockets.md" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

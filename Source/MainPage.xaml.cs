@@ -101,8 +101,9 @@ namespace Networking
         private async void OnSystemTestClick(object sender, RoutedEventArgs e)
         {
             uiSystemTestResults.Text = "Starting test run\n\n";
+            int nerror = 0;
 
-            await DoFullTest();
+            nerror += await DoFullTest();
         }
 
         private async Task<int> DoFullTest()

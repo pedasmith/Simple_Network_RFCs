@@ -23,12 +23,15 @@ namespace Networking.RFC_Foundational_Tests
                 await testObject.Test_Echo_Good_Path_Tcp();
                 await testObject.Test_Echo_Good_Path_Udp();
 
-                var protocol = EchoClient_Rfc_862.ProtocolType.Udp;
+                var protocol = EchoClient_Rfc_862.ProtocolType.Tcp;
                 await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
                 await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
                 await testObject.Test_Stress(protocol);
 
-                //TODO: get the TCP version of the tests working, too.
+                protocol = EchoClient_Rfc_862.ProtocolType.Udp;
+                await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
+                await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
+                await testObject.Test_Stress(protocol);
             }
             catch (Exception ex)
             {
@@ -41,10 +44,16 @@ namespace Networking.RFC_Foundational_Tests
 
         public async Task Test_Echo_Simplest()
         {
-            var result = await Simplest_Echo_Sample_Rfc_862.RunAsync();
-            Infrastructure.IfTrueError(result.Succeeded != EchoClient_Rfc_862.EchoResult.State.Succeeded, "UDP status should be in progress");
+            // This is a magic string; it's the data that's sent by the client.
             var expected = "Hello, echo server!";
-            Infrastructure.IfTrueError(result.Value != expected, $"Echo UDP got {result.Value} but expected {expected}");
+
+            var resultTcp = await Simplest_Echo_Sample_Rfc_862.RunTcpAsync();
+            Infrastructure.IfTrueError(resultTcp.Succeeded != EchoClient_Rfc_862.EchoResult.State.Succeeded, "UDP status should be in progress");
+            Infrastructure.IfTrueError(resultTcp.Value != expected, $"Echo TCP got {resultTcp.Value} but expected {expected}");
+
+            var resultUdp = await Simplest_Echo_Sample_Rfc_862.RunUdpAsync();
+            Infrastructure.IfTrueError(resultUdp.Succeeded != EchoClient_Rfc_862.EchoResult.State.Succeeded, "UDP status should be in progress");
+            Infrastructure.IfTrueError(resultUdp.Value != expected, $"Echo UDP got {resultUdp.Value} but expected {expected}");
         }
 
         public async Task Test_Echo_Good_Path_Tcp()
@@ -132,6 +141,7 @@ namespace Networking.RFC_Foundational_Tests
             }
         }
 
+
         /// <summary>
         /// System test, not a unit tests. Creates a server, pumps a bunch of requests at it,
         /// and verifies that everything worked.
@@ -141,7 +151,7 @@ namespace Networking.RFC_Foundational_Tests
         {
             string pname = protocol.ToString();
 
-            const int NLOOP = 10;
+            const int NLOOP = 4;
             const int NBUNCH = 200;
 
             const double ALLOWED_TIME = 20.0; // Normally we expect everything to be fast. No so much for a stress test!
@@ -169,27 +179,44 @@ namespace Networking.RFC_Foundational_Tests
                 }
 
                 var start = DateTimeOffset.UtcNow;
-                var client = new EchoClient_Rfc_862(clientOptions);
                 for (int i = 0; i < NLOOP; i++)
                 {
                     if (i % 100 == 0 && i > 0)
                     {
                         Infrastructure.Log($"Client: Stress: {pname} starting loop {i} of {NLOOP}");
                     }
-                    var allTasks = new Task<EchoClient_Rfc_862.EchoResult>[NBUNCH];
-                    for (int j = 0; j < allTasks.Length; j++)
+                    var allClients = new EchoClient_Rfc_862[NBUNCH];
+
+                    var allWriteTasks = new Task<EchoClient_Rfc_862.EchoResult>[NBUNCH];
+                    for (int j = 0; j < NBUNCH; j++)
                     {
                         var send = $"ABC-Loop {i} Item {j}";
                         NBytesWrite += send.Length;
-                        allTasks[j] = client.WriteAsync(host, serverOptions.Service, protocol, send);
+                        allClients[i] = new EchoClient_Rfc_862(clientOptions);
+                        allWriteTasks[j] = allClients[i].WriteAsync(host, serverOptions.Service, protocol, send);
                     }
-                    await Task.WhenAll(allTasks);
+                    await Task.WhenAll(allWriteTasks);
 
-                    for (int j = 0; j < allTasks.Length; j++)
+                    // TCP has to wait for the close to happen.
+                    Task<EchoClient_Rfc_862.EchoResult>[] allCloseTasks = null;
+                    if (protocol == EchoClient_Rfc_862.ProtocolType.Tcp)
                     {
-                        var result = allTasks[j].Result;
+                        allCloseTasks = new Task<EchoClient_Rfc_862.EchoResult>[NBUNCH];
+                        for (int j = 0; j < NBUNCH; j++)
+                        {
+                            allCloseTasks[j] = allClients[i].CloseAsync();
+                        }
+                        await Task.WhenAll(allCloseTasks);
+                    }
+
+                    for (int j = 0; j < NBUNCH; j++)
+                    {
+                        var result = protocol == EchoClient_Rfc_862.ProtocolType.Tcp 
+                            ? allCloseTasks[i].Result 
+                            : allWriteTasks[j].Result;
+
                         var didSucceed = result.Succeeded == EchoClient_Rfc_862.EchoResult.State.Succeeded;
-                        if (!didSucceed  && result.Error == SocketErrorStatus.ConnectionResetByPeer)
+                        if (!didSucceed && result.Error == SocketErrorStatus.ConnectionResetByPeer)
                         {
                             // Connection reset by peer is an error only if we get a bunch of them.
                             NConnReset++;
@@ -208,7 +235,7 @@ namespace Networking.RFC_Foundational_Tests
                         Infrastructure.IfTrueError(result.TimeInSeconds > ALLOWED_TIME, $"result.TimeInSeconds too large {result.TimeInSeconds} for {pname}");
                     }
 
-                    await Task.Delay(300); //TODO: pause just to make the test runs easier to figure out
+                    await Task.Delay(300); //NOTE: pause just to make the test runs easier to figure out
                 }
                 // timing data
                 var delta = DateTimeOffset.UtcNow.Subtract(start).TotalSeconds;

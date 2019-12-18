@@ -32,6 +32,7 @@ namespace Networking.RFC_Foundational
             /// on draining). Setting this to zero is OK.
             /// 
             /// Default is 10 milliseconds
+            /// TODO: nobody uses this? Check all settings to make sure they are used!
             /// </summary>
             public int TcpReadTimeInMilliseconds { get; set; } = 10;
 
