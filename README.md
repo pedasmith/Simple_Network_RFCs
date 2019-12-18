@@ -12,7 +12,7 @@ The code demonstrates
 * Comments on [Stream Sockets](Source/Assets/Comments/About_Stream_Sockets.md)
 * Comments on [Datagram Sockets](Source/Assets/Comments/About_Datagram_Sockets.md)
 * Snarky [Daytime](Source/Assets/Comments/About_Daytime_Protocol_Rfc_867.md) comments
-* Snarky [Echo](Source/Assets/Comments/About_Daytime_Protocol_Rfc_867.md) comments
+* Snarky [Echo](Source/Assets/Comments/About_Echo_Protocol_Rfc_862.md) comments
 
 ## Code organization
 
