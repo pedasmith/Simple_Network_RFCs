@@ -26,8 +26,9 @@ namespace Networking.RFC_Foundational_Tests
                 var protocol = EchoClient_Rfc_862.ProtocolType.Udp;
                 await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
                 await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
-                //TODO: await testObject.Test_Stress(protocol);
+                await testObject.Test_Stress(protocol);
 
+                //TODO: get the TCP version of the tests working, too.
             }
             catch (Exception ex)
             {
@@ -131,5 +132,103 @@ namespace Networking.RFC_Foundational_Tests
             }
         }
 
+        /// <summary>
+        /// System test, not a unit tests. Creates a server, pumps a bunch of requests at it,
+        /// and verifies that everything worked.
+        /// </summary>
+        /// <returns></returns>
+        public async Task Test_Stress(EchoClient_Rfc_862.ProtocolType protocol)
+        {
+            string pname = protocol.ToString();
+
+            const int NLOOP = 10;
+            const int NBUNCH = 200;
+
+            const double ALLOWED_TIME = 20.0; // Normally we expect everything to be fast. No so much for a stress test!
+            const int ALLOWED_CONN_RESET = (NLOOP * NBUNCH) * 5 / 100; // Allow 5% conn reset
+
+            int NBytesWrite = 0;
+            int NConnReset = 0;
+            var host = new HostName("localhost");
+            var serverOptions = new EchoServer_Rfc_862.ServerOptions()
+            {
+                LoggingLevel = EchoServer_Rfc_862.ServerOptions.Verbosity.None,
+            };
+            var clientOptions = new EchoClient_Rfc_862.ClientOptions()
+            {
+                LoggingLevel = EchoClient_Rfc_862.ClientOptions.Verbosity.None,
+            };
+
+            using (var server = new EchoServer_Rfc_862(serverOptions))
+            {
+                bool serverOk = await server.StartAsync();
+                if (!serverOk)
+                {
+                    Infrastructure.Error($"Client: Stress: {pname} unable to start server");
+                    return;
+                }
+
+                var start = DateTimeOffset.UtcNow;
+                var client = new EchoClient_Rfc_862(clientOptions);
+                for (int i = 0; i < NLOOP; i++)
+                {
+                    if (i % 100 == 0 && i > 0)
+                    {
+                        Infrastructure.Log($"Client: Stress: {pname} starting loop {i} of {NLOOP}");
+                    }
+                    var allTasks = new Task<EchoClient_Rfc_862.EchoResult>[NBUNCH];
+                    for (int j = 0; j < allTasks.Length; j++)
+                    {
+                        var send = $"ABC-Loop {i} Item {j}";
+                        NBytesWrite += send.Length;
+                        allTasks[j] = client.WriteAsync(host, serverOptions.Service, protocol, send);
+                    }
+                    await Task.WhenAll(allTasks);
+
+                    for (int j = 0; j < allTasks.Length; j++)
+                    {
+                        var result = allTasks[j].Result;
+                        var didSucceed = result.Succeeded == EchoClient_Rfc_862.EchoResult.State.Succeeded;
+                        if (!didSucceed  && result.Error == SocketErrorStatus.ConnectionResetByPeer)
+                        {
+                            // Connection reset by peer is an error only if we get a bunch of them.
+                            NConnReset++;
+                            Infrastructure.IfTrueError(NConnReset > ALLOWED_CONN_RESET, $"Too many connection resets {NConnReset}");
+                        }
+                        else if (!Infrastructure.IfTrueError(!didSucceed, $"!result.Succeeded with error {result.Error.ToString()} for {pname}"))
+                        {
+                            Infrastructure.IfTrueError(result.Value == null, "result.Value is null");
+                            if (result.Value != null && (result.Value.Length < 10 || result.Value.Length > 60))
+                            {
+                                ;
+                            }
+                            Infrastructure.IfTrueError(result.Value != null && (result.Value.Length < 10 || result.Value.Length > 60), $"result.Value is weird size ({result.Value.Length}) for {pname}");
+                        }
+                        Infrastructure.IfTrueError(result.TimeInSeconds < -1, $"result.TimeInSeconds too small {result.TimeInSeconds} for {pname}");
+                        Infrastructure.IfTrueError(result.TimeInSeconds > ALLOWED_TIME, $"result.TimeInSeconds too large {result.TimeInSeconds} for {pname}");
+                    }
+
+                    await Task.Delay(300); //TODO: pause just to make the test runs easier to figure out
+                }
+                // timing data
+                var delta = DateTimeOffset.UtcNow.Subtract(start).TotalSeconds;
+                double timePerCall = delta / (double)(NLOOP * NBUNCH);
+                Infrastructure.Log($"Stress test average time: {NLOOP} {NBUNCH} {timePerCall} for {pname}");
+
+
+                // How's the server doing?
+                const int ExpectedCount = NLOOP * NBUNCH;
+                Infrastructure.IfTrueError(server.Stats.NConnections != ExpectedCount, $"Server got {server.Stats.NConnections} connections but expected {ExpectedCount} for {pname}");
+                Infrastructure.IfTrueError(server.Stats.NResponses != ExpectedCount, $"Server sent {server.Stats.NResponses} responses but expected {ExpectedCount} for {pname}");
+
+                // Why is the expected not equal to the NBytesSent? Because TCP has a weird timing thing:
+                // the server has to close down reading from the client relatively quickly and can't waste
+                // time for the client to send bytes that probably won't come.
+                var expectedMinBytes = protocol == EchoClient_Rfc_862.ProtocolType.Udp ? NBytesWrite : NBytesWrite / 4;
+                Infrastructure.IfTrueError(server.Stats.NBytesRead > NBytesWrite, $"Server got {server.Stats.NBytesRead} bytes but expected {NBytesWrite} for {pname}");
+                Infrastructure.IfTrueError(server.Stats.NBytesRead < expectedMinBytes, $"Server got {server.Stats.NBytesRead} bytes but expected {NBytesWrite} with a minimum value of {expectedMinBytes} for {pname}");
+                Infrastructure.IfTrueError(server.Stats.NExceptions != 0, $"Server got {server.Stats.NExceptions} exceptions but expected {0} for {pname}");
+            }
+        }
     }
 }

@@ -148,18 +148,12 @@ namespace Networking.RFC_Foundational
                 retval = false;
             }
 
-            // TODO: make this just a normal 'thing' in the client?
-            var hosts = Windows.Networking.Connectivity.NetworkInformation.GetHostNames();
-            foreach (var host in hosts)
-            {
-                Log($"Host: {host.CanonicalName}");
-            }
             return retval;
         }
 
         private async void UdpListener_MessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
         {
-            Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP: message recv sender remote port <<{sender.Information.RemotePort}>>");
+            Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP: Got incoming message");
             Interlocked.Increment(ref Stats.NConnections);
 
             HostName remoteHost;

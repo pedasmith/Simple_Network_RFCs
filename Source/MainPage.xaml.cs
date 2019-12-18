@@ -22,6 +22,15 @@ namespace Networking
         private void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
             DisplayRequestRequestActive(true); // Windows will turn this off automatically.
+            uiNetworkInfo.Text = "\n";
+
+            var hosts = Windows.Networking.Connectivity.NetworkInformation.GetHostNames();
+            uiNetworkInfo.Text += "HOST NAMES\n================\n";
+            foreach (var host in hosts)
+            {
+                uiNetworkInfo.Text += $"{host.CanonicalName}\n";
+            }
+
         }
 
         static Windows.System.Display.DisplayRequest CurrDisplayRequest = null;
@@ -93,14 +102,7 @@ namespace Networking
         {
             uiSystemTestResults.Text = "Starting test run\n\n";
 
-            int nerror = 0;
-            uiSystemTestResults.Text += "EchoTest_Rfc_862.Test: ";
-            Infrastructure.NError = 0;
-            await EchoTest_Rfc_862.Test();
-            nerror += Infrastructure.NError;
-            uiSystemTestResults.Text += $" {nerror}\n";
-
-            // nerror += await DoFullTest();
+            await DoFullTest();
         }
 
         private async Task<int> DoFullTest()
@@ -127,12 +129,14 @@ namespace Networking
             nerror += TimeServer_Rfc_868.TimeConversion.TestCalendar();
             uiSystemTestResults.Text += $" {nerror}\n";
 
+            //
+            // Tests for each protocol.
+            //
             uiSystemTestResults.Text += "CharGenTest_Rfc_864.Test: ";
             Infrastructure.NError = 0;
             await CharGenTest_Rfc_864.Test();
             nerror += Infrastructure.NError;
             uiSystemTestResults.Text += $" {nerror}\n";
-
 
             uiSystemTestResults.Text += "DaytimeTest_Rfc_867.Test: ";
             Infrastructure.NError = 0;

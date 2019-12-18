@@ -31,6 +31,7 @@
                             PaneDisplayMode="Left" IsBackButtonVisible="Collapsed"
                             SelectionChanged="OnSelectMenu">
                 <NavigationView.MenuItems>
+                    <NavigationViewItem Content="Network Information" Tag="NetworkInfo" />
                     <NavigationViewItem Content="Character Generator (RFC 864)" Tag="Rfc_864" />
                     <NavigationViewItem Content="Daytime (RFC 867)" Tag="Rfc_867" />
                     <NavigationViewItem Content="ECHO (RFC 862)" Tag="Rfc_862" />
@@ -38,7 +39,16 @@
                     <NavigationViewItem Content="System Test" Tag="SystemTest" />
                 </NavigationView.MenuItems>
                 <Grid VerticalAlignment="Stretch" x:Name="uiControls">
-                    <Grid Tag="Rfc_862" Visibility="Visible">
+                    <Grid Tag="NetworkInfo" Visibility="Visible">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock>Network Information</TextBlock>
+                        <TextBlock Grid.Row="1" x:Name="uiNetworkInfo" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
+                    </Grid>
+                    <Grid Tag="Rfc_862" Visibility="Collapsed">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="*" />

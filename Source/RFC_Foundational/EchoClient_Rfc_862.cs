@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Networking;
 using Windows.Networking.Sockets;
@@ -93,10 +94,31 @@ namespace Networking.RFC_Foundational
         }
         public ClientStats Stats { get; internal set; } = new ClientStats();
 
-        DatagramSocket udpSocket;
-        StreamSocket tcpSocket;
-        DataWriter tcpDw;
-        DataWriter udpDw;
+        class ClientUdpResults
+        {
+            public void Add(string service, EchoResult result)
+            {
+                UdpResults.TryAdd(service, new ConcurrentQueue<EchoResult>());
+                var queue = UdpResults[service];
+                queue.Enqueue(result);
+            }
+            public bool TryRemove (string service, out EchoResult echoResult)
+            {
+                echoResult = null;
+                if (!UdpResults.ContainsKey(service)) return false;
+                var queue = UdpResults[service]; // We never remove a list from the collection, so this is safe
+                var didremove = queue.TryDequeue(out echoResult);
+                return didremove;
+            }
+            ConcurrentDictionary<string, ConcurrentQueue<EchoResult>> UdpResults = new ConcurrentDictionary<string, ConcurrentQueue<EchoResult>>();
+        }
+
+        DatagramSocket udpSocket = null;
+        StreamSocket tcpSocket = null;
+        DataWriter tcpDw = null;
+        DataWriter udpDw = null;
+        ClientUdpResults UdpResults = new ClientUdpResults();
+
         public delegate void LogEventHandler(object sender, string str);
         public event LogEventHandler LogEvent;
 
@@ -142,6 +164,12 @@ namespace Networking.RFC_Foundational
                 {
                     await TcpReadTask;
                 }
+            }
+            if (udpSocket != null) //TODO: what other clients need to close their UDP sockets?
+            {
+                udpDw.Dispose();
+                udpDw = null;
+                udpSocket = null;
             }
             return TcpReadEchoResult; // Not really fully correct.
         }
@@ -199,24 +227,71 @@ namespace Networking.RFC_Foundational
             }
         }
 
-        ConcurrentDictionary<string, EchoResult> UdpResults = new ConcurrentDictionary<string, EchoResult>();
-        DateTime UdpStartTime;
+        /// <summary>
+        /// Ensures that the socket is made. Will return a failure EchoResult on failure
+        /// and will return NULL for a success.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="service"></param>
+        /// <returns></returns>
+        private async Task<EchoResult> EnsureUdpSocket(HostName address, string service)
+        {
+            bool mustConnect = false;
+            lock (this)
+            {
+                if (udpSocket == null)
+                {
+                    udpSocket = new DatagramSocket();
+                    udpSocket.MessageReceived += UdpSocket_MessageReceived;
+                    mustConnect = true;
+                }
+            }
+            if (mustConnect)
+            {
+                try
+                {
+                    // Can't do the await inside a lock; it's not allowed in C#.
+                    await udpSocket.ConnectAsync(address, service);
+                    udpDw = new DataWriter(udpSocket.OutputStream);
+                }
+                catch (Exception ex)
+                {
+                    udpSocket = null;
+                    Stats.NExceptions++;
+                    Log($"ERROR: Client: Creating UDP socket to {address} exception {ex.Message}");
+                    var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                    return EchoResult.MakeFailed(ex, delta);
+                }
+            }
 
+            // must be in a race condition to make the socket and get the udpDw
+            while (udpSocket != null && udpDw == null)
+            {
+                await Task.Delay(10);
+            }
+
+            // We made a socket and then making the datawriter somehow failed.
+            // Just give up; there's no path that will get us into a better place.
+            if (udpSocket == null || udpDw == null)
+            {
+                return EchoResult.MakeFailed(SocketErrorStatus.CannotAssignRequestedAddress, 0);
+            }
+
+            return null;
+        }
+
+        DateTime UdpStartTime;
         private async Task<EchoResult> WriteUdpAsync(HostName address, string service, string data)
         {
             UdpStartTime = DateTime.UtcNow;
             try
             {
-                if (udpSocket == null)
+                var result = await EnsureUdpSocket(address, service);
+                if (result != null)
                 {
-                    udpSocket = new DatagramSocket();
-                    await udpSocket.ConnectAsync(address, service);
-                    udpDw = new DataWriter(udpSocket.OutputStream);
-
-                    // Now read everything
-                    udpSocket.MessageReceived += UdpSocket_MessageReceived;
+                    // EnsureUdpSocket only return non-null result after a failure.
+                    return result;
                 }
-                var dw = udpDw;
 
                 if (!string.IsNullOrEmpty(data))
                 {
@@ -267,6 +342,7 @@ namespace Networking.RFC_Foundational
             }
         }
 
+
         private void UdpSocket_MessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
         {
             try
@@ -274,7 +350,7 @@ namespace Networking.RFC_Foundational
                 var dr = args.GetDataReader();
                 dr.InputStreamOptions = InputStreamOptions.Partial; // | InputStreamOptions.ReadAhead;
                 var udpResult = ReadUdp(dr);
-                UdpResults.TryAdd(sender.Information.LocalPort, udpResult);
+                UdpResults.Add(sender.Information.LocalPort, udpResult);
             }
             catch (Exception ex)
             {
@@ -283,7 +359,7 @@ namespace Networking.RFC_Foundational
                 // but with an args with no real data.
                 var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
                 var udpResult = EchoResult.MakeFailed(ex, delta);
-                UdpResults.TryAdd(sender.Information.LocalPort, udpResult);
+                UdpResults.Add(sender.Information.LocalPort, udpResult);
             }
         }
         private EchoResult ReadUdp(DataReader dr)
@@ -337,7 +413,7 @@ namespace Networking.RFC_Foundational
             TcpReadEchoResult.TimeInSeconds = delta;
             if (TcpReadEchoResult.Succeeded == EchoResult.State.InProgress)
             {
-                TcpReadEchoResult.Succeeded = EchoResult.State.Succeeded; // TODO: Really succeeded? Or are we just kind of faking it?
+                TcpReadEchoResult.Succeeded = EchoResult.State.Succeeded; 
             }
         }
 
