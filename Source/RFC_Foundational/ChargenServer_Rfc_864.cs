@@ -163,10 +163,12 @@ namespace Networking.RFC_Foundational
                 remoteHost = args.RemoteAddress;
                 remotePort = args.RemotePort;
                 var dr = args.GetDataReader();
+                var len = dr.UnconsumedBufferLength;
+                Stats.NBytesRead += len;
                 var os = await sender.GetOutputStreamAsync(remoteHost, remotePort);
                 var dw = new DataWriter(os);
 
-                Task t = CharGenUdpAsync(dr, dw, remotePort);
+                Task t = CharGenUdpAsync(dw, remotePort);
                 await t;
             }
             catch (Exception)
@@ -202,8 +204,6 @@ namespace Networking.RFC_Foundational
                         readTask.AsTask(),
                         Task.Delay (Options.TcpReadPollTimeInMilliseconds)
                     };
-                    //var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
-                    //var waitResult = Task.WaitAny(new Task[] { read.AsTask() }, Options.TcpReadPollTimeInMilliseconds);
                     var waitResult = await Task.WhenAny(taskList);
                     if (waitResult == taskList[0])
                     {
@@ -287,12 +287,11 @@ namespace Networking.RFC_Foundational
 
             Task[] tasks = new Task[]
             {
-                CharGenWriteTcpAsync(tcpSocket, cts.Token), //TODO: call it Write everywhere, not Send/Sent
+                CharGenWriteTcpAsync(tcpSocket, cts.Token),
                 CharGenReadTcpAsync(tcpSocket, cts.Token),
             };
             // Wait for one task to finish -- mostly likely the reader which will stop
             // when the client closes their side of the socket.
-            //TODO: this had a Task.WaitAny() which is bad for await-style; find all occurances everywhere and fix.
             var done = await Task.WhenAny(tasks);
             // If you don't cancel here, the writer will just keep on writing which in turn
             // will cause the socket to be forcefully closed when we try to write to a socket
@@ -307,7 +306,7 @@ namespace Networking.RFC_Foundational
         }
 
 
-        private async Task CharGenUdpAsync(DataReader dr, DataWriter dw, string remotePort)
+        private async Task CharGenUdpAsync(DataWriter dw, string remotePort)
         {
             var start = rnd.Next(0, 95);
             var str = MakePattern(start, 72);

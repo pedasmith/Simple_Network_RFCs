@@ -11,12 +11,6 @@ using Windows.Storage.Streams;
 
 namespace Networking.RFC_Foundational
 {
-    /// <summary>
-    /// TODO: this is really similar to the echo client -- what should happen to merge them into
-    /// one complete class that handles both cases? Worse, why base this so much on Echo; for udp
-    /// it's much closer to DayTime or Time.
-    /// TODO: need the stats and options!
-    /// </summary>
     public class CharGenClient_Rfc_864 : IDisposable
     {
         /// <summary>
@@ -216,8 +210,6 @@ namespace Networking.RFC_Foundational
                 tcpDw.WriteString(data);
                 await tcpDw.StoreAsync();
                 Stats.NWrites++;
-                //TODO: fill in stats everywhere
-                //TODO: ensure options are OK everywhere
 
                 var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                 return CharGenResult.MakeInProgress(delta);
@@ -239,11 +231,13 @@ namespace Networking.RFC_Foundational
         /// <returns></returns>
         private CharGenResult EnsureUdpSocket()
         {
+            var startTime = DateTime.UtcNow;
             lock (this)
             {
                 if (udpSocket == null)
                 {
                     udpSocket = new DatagramSocket();
+                    SocketStartTime = startTime;
                     udpSocket.MessageReceived += UdpSocket_MessageReceived;
                 }
             }
@@ -262,8 +256,6 @@ namespace Networking.RFC_Foundational
         {
             try
             {
-                // TODO: wrong; pressing Write twice in a row gets only one result
-                // TODO: wrong; should return the values
                 var haveUdpSocket = EnsureUdpSocket();
                 if (haveUdpSocket != null)
                 {
@@ -271,11 +263,23 @@ namespace Networking.RFC_Foundational
                     return haveUdpSocket;
                 }
 
-                //TODO: actually write the data?
-                var b = new Windows.Storage.Streams.Buffer(0);
                 var stream = await udpSocket.GetOutputStreamAsync(address, service);
-                await stream.WriteAsync(b);
-                Stats.NWrites++;
+                if (string.IsNullOrEmpty(data))
+                {
+                    // A blank string, when written to a data writer, won't actually result in a 
+                    // UDP packet being sent. For the special case of not sending any data,
+                    // use the WriteAsync on the socket's OutputStream directly.
+                    var b = new Windows.Storage.Streams.Buffer(0);
+                    await stream.WriteAsync(b);
+                    Stats.NWrites++;
+                }
+                else
+                {
+                    var dw = new DataWriter(stream);
+                    dw.WriteString(data);
+                    await dw.StoreAsync();
+                    Stats.NWrites++;
+                }
                 Log(ClientOptions.Verbosity.Verbose, $"Client: UDP: Sent request on local port {udpSocket.Information.LocalPort} request {data}");
 
 

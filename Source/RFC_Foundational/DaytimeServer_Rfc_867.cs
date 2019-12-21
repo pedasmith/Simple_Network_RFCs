@@ -232,12 +232,16 @@ namespace Networking.RFC_Foundational
             {
                 try
                 {
-                    var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
-                    //TODO: switch to WhenAny to use the awaitable values. See the CharGen server for details.
-                    var waitResult = Task.WaitAny(new Task[] { read.AsTask() }, Options.TcpReadTimeInMilliseconds);
-                    if (waitResult == 0)
+                    var readTask = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
+                    var taskList = new Task[]
                     {
-                        var result = read.GetResults();
+                        readTask.AsTask(),
+                        Task.Delay (Options.TcpReadTimeInMilliseconds),
+                    };
+                    var waitResult = await Task.WhenAny(taskList);
+                    if (waitResult == taskList[0])
+                    {
+                        var result = readTask.GetResults();
                         Stats.NBytesRead += result.Length;
                         var partialresult = BufferToString.ToString(result);
                         stringresult += partialresult;

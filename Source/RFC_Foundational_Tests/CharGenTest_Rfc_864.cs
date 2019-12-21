@@ -19,14 +19,18 @@ namespace Networking.RFC_Foundational_Tests
             {
                 testObject.Test_CharGen();
 
-                //TODO: reinstate the tests
-                //await testObject.Test_CharGen_Simplest();
-                //await testObject.Test_CharGen_Good_Path_Tcp();
-                //await testObject.Test_CharGen_Good_Path_Udp();
+                await testObject.Test_CharGen_Simplest();
+                await testObject.Test_CharGen_Good_Path_Tcp();
+                await testObject.Test_CharGen_Good_Path_Udp();
 
                 var protocol = CharGenClient_Rfc_864.ProtocolType.Tcp;
-                //await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
-                //await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
+                await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
+                await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
+                await testObject.Test_Stress(protocol);
+
+                protocol = CharGenClient_Rfc_864.ProtocolType.Udp;
+                await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
+                await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
                 await testObject.Test_Stress(protocol);
 
 
@@ -153,8 +157,8 @@ namespace Networking.RFC_Foundational_Tests
         {
             string pname = protocol.ToString();
 
-            const int NLOOP = 10;
-            const int NBUNCH = 20;
+            const int NLOOP = 4;
+            const int NBUNCH = 10;
 
             const double ALLOWED_TIME = 20.0; // Normally we expect everything to be fast. No so much for a stress test!
             const int ALLOWED_CONN_RESET = (NLOOP * NBUNCH) * 5 / 100; // Allow 5% conn reset
