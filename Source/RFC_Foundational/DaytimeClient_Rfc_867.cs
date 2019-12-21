@@ -219,20 +219,20 @@ namespace Networking.RFC_Foundational
                 await udpSocket.ConnectAsync(address, service);
                 udpSocket.MessageReceived += UdpSocket_MessageReceived;
 
-                if (!string.IsNullOrEmpty(data))
+                if (string.IsNullOrEmpty(data))
                 {
                     // A blank string, when written to a data writer, won't actually result in a 
                     // UDP packet being sent. For the special case of not sending any data,
                     // use the WriteAsync on the socket's OutputStream directly.
-                    var dw = new DataWriter(udpSocket.OutputStream);
-                    dw.WriteString(data); 
-                    await dw.StoreAsync();
+                    var b = new Windows.Storage.Streams.Buffer(0);
+                    await udpSocket.OutputStream.WriteAsync(b);
                     Stats.NWrites++;
                 }
                 else
                 {
-                    var b = new Windows.Storage.Streams.Buffer(0);
-                    await udpSocket.OutputStream.WriteAsync(b);
+                    var dw = new DataWriter(udpSocket.OutputStream);
+                    dw.WriteString(data);
+                    await dw.StoreAsync();
                     Stats.NWrites++;
                 }
                 Log(ClientOptions.Verbosity.Verbose, $"Client: UDP: Sent request on local port {udpSocket.Information.LocalPort} request {data}");

@@ -162,6 +162,7 @@
     <Compile Include="RFC_UI_UWP\TimeServer_Rfc_868_Control.xaml.cs">
       <DependentUpon>TimeServer_Rfc_868_Control.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Simplest_Possible_Versions\Simplest_CharGen_Rfc_864.cs" />
     <Compile Include="Simplest_Possible_Versions\Simplest_Daytime_Sample_Rfc_867.cs" />
     <Compile Include="Simplest_Possible_Versions\Simplest_Time_Sample_Rfc_868.cs" />
     <Compile Include="Simplest_Possible_Versions\Simplest_Echo_Rfc_862.cs" />

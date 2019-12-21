@@ -12,14 +12,14 @@ using Windows.Storage.Streams;
 
 namespace Networking.RFC_Foundational
 {
-    class CharGenServer_Rfc_864
+    public class CharGenServer_Rfc_864 : IDisposable
     {
         public class ServerOptions
         {
             public enum Verbosity { None, Normal, Verbose }
             public Verbosity LoggingLevel { get; set; } = ServerOptions.Verbosity.Normal;
 
-            public enum PatternType {  Classic72 };
+            public enum PatternType {  Fixed, Classic72 };
             public PatternType OutputPattern { get; set; } = PatternType.Classic72;
             public static string Ascii95 = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
             
@@ -28,7 +28,7 @@ namespace Networking.RFC_Foundational
             /// so by default I keep the speed low.
             /// TODO: when set to 0, does the code still work?
             /// </summary>
-            public int TimeBetweenWritesInMilliseconds = 500; 
+            public int TimeBetweenWritesInMilliseconds { get; set; } = 500; 
 
             /// <summary>
             /// Service is the fancy name for "port". Set to 10019 to work with WinRT; RFC compliant value is 19.
@@ -178,7 +178,8 @@ namespace Networking.RFC_Foundational
 
         private async void Listener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
-            Stats.NConnections++;
+            Log(ServerOptions.Verbosity.Verbose, $"SERVER: TCP Connection to remote port {args.Socket.Information.RemotePort}");
+            Interlocked.Increment(ref Stats.NConnections);
             var socket = args.Socket;
             Task t = CharGenTcpAsync(socket);
             await t;
@@ -195,11 +196,18 @@ namespace Networking.RFC_Foundational
             {
                 try
                 {
-                    var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
-                    var waitResult = Task.WaitAny(new Task[] { read.AsTask() }, Options.TcpReadPollTimeInMilliseconds);
-                    if (waitResult == 0)
+                    var readTask = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
+                    var taskList = new Task[]
                     {
-                        var result = read.GetResults();
+                        readTask.AsTask(),
+                        Task.Delay (Options.TcpReadPollTimeInMilliseconds)
+                    };
+                    //var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
+                    //var waitResult = Task.WaitAny(new Task[] { read.AsTask() }, Options.TcpReadPollTimeInMilliseconds);
+                    var waitResult = await Task.WhenAny(taskList);
+                    if (waitResult == taskList[0])
+                    {
+                        var result = readTask.GetResults();
                         Stats.NBytesRead += result.Length;
                         if (result.Length == 0)
                         {
@@ -221,7 +229,6 @@ namespace Networking.RFC_Foundational
             }
         }
 
-
         /// <summary>
         /// Continuously writes data over a streamsocket until the cancellation token is reset
         /// </summary>
@@ -233,7 +240,7 @@ namespace Networking.RFC_Foundational
             bool writeOk = true;
             while (writeOk && !ct.IsCancellationRequested)
             {
-                var str = MakeAscii(start, 72);
+                var str = MakePattern (start, 72);
                 var writeBuffer = Windows.Security.Cryptography.CryptographicBuffer.ConvertStringToBinary(str, Windows.Security.Cryptography.BinaryStringEncoding.Utf8);
                 try
                 {
@@ -285,24 +292,25 @@ namespace Networking.RFC_Foundational
             };
             // Wait for one task to finish -- mostly likely the reader which will stop
             // when the client closes their side of the socket.
-            var done = Task.WaitAny(tasks);
+            //TODO: this had a Task.WaitAny() which is bad for await-style; find all occurances everywhere and fix.
+            var done = await Task.WhenAny(tasks);
             // If you don't cancel here, the writer will just keep on writing which in turn
             // will cause the socket to be forcefully closed when we try to write to a socket
             // which is in the process of being closed.
             cts.Cancel();
-            Task.WaitAll(tasks);
+            await Task.WhenAll(tasks);
 
             Log(ServerOptions.Verbosity.Verbose, $"SERVER: TCP Stream closing down the current writing socket");
 
             //TODO: it is critical?
-            tcpSocket.Dispose(); // The dispose is hardly critical; without it the client won't ever finish reading our output
+            tcpSocket.Dispose(); // TODO: this comment makes no sense. The dispose is hardly critical; without it the client won't ever finish reading our output
         }
 
 
         private async Task CharGenUdpAsync(DataReader dr, DataWriter dw, string remotePort)
         {
             var start = rnd.Next(0, 95);
-            var str = MakeAscii(start, 72);
+            var str = MakePattern(start, 72);
 
             Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP: reply with CharGen <<{str}>> to remote port {remotePort}");
             dw.WriteString(str);
@@ -314,13 +322,25 @@ namespace Networking.RFC_Foundational
             Log(ServerOptions.Verbosity.Verbose, $"SERVER: UDP closing down the current writing socket for {str}");
         }
 
+        private string MakePattern(int start, int length=72)
+        {
+            switch (Options.OutputPattern)
+            {
+                case ServerOptions.PatternType.Fixed:
+                    return MakeAscii(0, 72);
+                case ServerOptions.PatternType.Classic72:
+                    return MakeAscii(start, 72);
+            }
+            return MakeAscii(0, 72);
+        }
+
         /// <summary>
         /// Generates an ascii string which is a subset of the original.
         /// </summary>
         /// <param name="start"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        public static string MakeAscii(int start, int length=72)
+        private static string MakeAscii(int start, int length=72)
         {
             string proto = ServerOptions.Ascii95;
             var sb = new StringBuilder();
@@ -334,6 +354,11 @@ namespace Networking.RFC_Foundational
                 sb.Append(proto[index]);
             }
             return sb.ToString();
+        }
+
+        public static string GetSampleReturn(int start = 0)
+        {
+            return MakeAscii(start);
         }
 
         public static void TestAscii95()
@@ -355,7 +380,6 @@ namespace Networking.RFC_Foundational
             TestMakeAsciiOne(95, 5, " !\"#$");
             TestMakeAsciiOne(0, -1, "");
             TestMakeAsciiOne(-1, 5, " !\"#$");
-
         }
 
         /// <summary>

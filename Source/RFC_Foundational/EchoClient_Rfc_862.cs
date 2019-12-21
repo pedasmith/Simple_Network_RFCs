@@ -176,7 +176,7 @@ namespace Networking.RFC_Foundational
 
         Task TcpReadTask = null;
         EchoResult TcpReadEchoResult = null;
-        DateTime TcpStartTime;
+        DateTime SocketStartTime;
 
         public enum ProtocolType {  Tcp, Udp }
         public async Task<EchoResult> WriteAsync(HostName address, string service, ProtocolType protocolType, string data)
@@ -202,7 +202,7 @@ namespace Networking.RFC_Foundational
                     tcpSocket = new StreamSocket();
                     await tcpSocket.ConnectAsync(address, service);
                     tcpDw = new DataWriter(tcpSocket.OutputStream);
-                    TcpStartTime = startTime;
+                    SocketStartTime = startTime;
 
                     // Now read everything
                     TcpReadEchoResult = EchoResult.MakeInProgress(0); // Taken no time at all so far :-)
@@ -215,14 +215,14 @@ namespace Networking.RFC_Foundational
                 await tcpDw.StoreAsync();
                 Stats.NWrites++;
 
-                var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                 return EchoResult.MakeInProgress(delta);
             }
             catch (Exception ex)
             {
                 Stats.NExceptions++;
                 Log($"ERROR: Client: Writing {data} to {address} exception {ex.Message}");
-                var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                 return EchoResult.MakeFailed(ex, delta);
             }
         }
@@ -259,12 +259,13 @@ namespace Networking.RFC_Foundational
                     udpSocket = null;
                     Stats.NExceptions++;
                     Log($"ERROR: Client: Creating UDP socket to {address} exception {ex.Message}");
-                    var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                    var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                     return EchoResult.MakeFailed(ex, delta);
                 }
             }
 
             // must be in a race condition to make the socket and get the udpDw
+            //TODO: remove magic number and verify and explain this code.
             while (udpSocket != null && udpDw == null)
             {
                 await Task.Delay(10);
@@ -280,39 +281,39 @@ namespace Networking.RFC_Foundational
             return null;
         }
 
-        DateTime UdpStartTime;
         private async Task<EchoResult> WriteUdpAsync(HostName address, string service, string data)
         {
-            UdpStartTime = DateTime.UtcNow;
+            SocketStartTime = DateTime.UtcNow;
             try
             {
                 var result = await EnsureUdpSocket(address, service);
                 if (result != null)
                 {
-                    // EnsureUdpSocket only return non-null result after a failure.
+                    // EnsureUdpSocket only returns non-null result after a failure.
                     return result;
                 }
 
-                if (!string.IsNullOrEmpty(data))
+                if (string.IsNullOrEmpty(data))
                 {
                     // A blank string, when written to a data writer, won't actually result in a 
                     // UDP packet being sent. For the special case of not sending any data,
                     // use the WriteAsync on the socket's OutputStream directly.
-                    udpDw.WriteString(data);
-                    await udpDw.StoreAsync();
+                    var b = new Windows.Storage.Streams.Buffer(0);
+                    await udpSocket.OutputStream.WriteAsync(b);
                     Stats.NWrites++;
                 }
                 else
                 {
-                    var b = new Windows.Storage.Streams.Buffer(0);
-                    await udpSocket.OutputStream.WriteAsync(b);
+                    udpDw.WriteString(data);
+                    await udpDw.StoreAsync();
                     Stats.NWrites++;
                 }
                 Log(ClientOptions.Verbosity.Verbose, $"Client: UDP: Sent request on local port {udpSocket.Information.LocalPort} request {data}");
 
 
+                //
                 // Wait for an answer
-
+                //
                 const int START_DELAY_MS = 10;
                 int currTotalDelay = 0;
                 int currDelay = START_DELAY_MS;
@@ -326,7 +327,7 @@ namespace Networking.RFC_Foundational
                     if (currTotalDelay >= Options.MaxWaitInMilliseconds)
                     {
                         Log($"ERROR: Client: reply from {address} took too long (outgoing data={data})");
-                        var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                        var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                         udpResult = EchoResult.MakeFailed(SocketErrorStatus.ConnectionTimedOut, delta);
                         break;
                     }
@@ -337,7 +338,7 @@ namespace Networking.RFC_Foundational
             {
                 Stats.NExceptions++;
                 Log($"ERROR: Client: Writing {data} to {address} exception {ex.Message}");
-                var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                 return EchoResult.MakeFailed(ex, delta);
             }
         }
@@ -357,7 +358,8 @@ namespace Networking.RFC_Foundational
                 // This can happen when we send a packet to a correct host (like localhost) but with an
                 // incorrect service. The packet will "bounce", resuluting in a MessageReceived event
                 // but with an args with no real data.
-                var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                Stats.NExceptions++;
+                var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                 var udpResult = EchoResult.MakeFailed(ex, delta);
                 UdpResults.Add(sender.Information.LocalPort, udpResult);
             }
@@ -371,12 +373,12 @@ namespace Networking.RFC_Foundational
                 dr.ReadBytes(buffer);
                 var stringresult = BufferToString.ToString(buffer);
                 LogEchoBuffer(buffer);
-                var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                 return EchoResult.MakeSucceeded(stringresult, delta);
             }
             else // socket is done
             {
-                var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
+                var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                 return EchoResult.MakeFailed(SocketErrorStatus.HttpInvalidServerResponse, delta);
             }
         }
@@ -406,10 +408,10 @@ namespace Networking.RFC_Foundational
             }
             catch (Exception ex)
             {
-                Log($"ECHO: CLIENT: Exception while reading {ex.Message} 0x{ex.HResult:X}");
                 Stats.NExceptions++;
+                Log($"ECHO: CLIENT: Exception while reading {ex.Message} 0x{ex.HResult:X}");
             }
-            var delta = DateTime.UtcNow.Subtract(TcpStartTime).TotalSeconds;
+            var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
             TcpReadEchoResult.TimeInSeconds = delta;
             if (TcpReadEchoResult.Succeeded == EchoResult.State.InProgress)
             {

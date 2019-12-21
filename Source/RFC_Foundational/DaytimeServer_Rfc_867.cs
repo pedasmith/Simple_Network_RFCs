@@ -233,6 +233,7 @@ namespace Networking.RFC_Foundational
                 try
                 {
                     var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
+                    //TODO: switch to WhenAny to use the awaitable values. See the CharGen server for details.
                     var waitResult = Task.WaitAny(new Task[] { read.AsTask() }, Options.TcpReadTimeInMilliseconds);
                     if (waitResult == 0)
                     {

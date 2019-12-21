@@ -1,9 +1,6 @@
 ﻿using Networking.RFC_Foundational;
 using Networking.Simplest_Possible_Versions;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Windows.Networking;
 using Windows.Networking.Sockets;
@@ -179,21 +176,21 @@ namespace Networking.RFC_Foundational_Tests
                 }
 
                 var start = DateTimeOffset.UtcNow;
-                for (int i = 0; i < NLOOP; i++)
+                for (int bigLoop = 0; bigLoop < NLOOP; bigLoop++)
                 {
-                    if (i % 100 == 0 && i > 0)
+                    if (bigLoop % 100 == 0 && bigLoop > 0)
                     {
-                        Infrastructure.Log($"Client: Stress: {pname} starting loop {i} of {NLOOP}");
+                        Infrastructure.Log($"Client: Stress: {pname} starting loop {bigLoop} of {NLOOP}");
                     }
                     var allClients = new EchoClient_Rfc_862[NBUNCH];
 
                     var allWriteTasks = new Task<EchoClient_Rfc_862.EchoResult>[NBUNCH];
-                    for (int j = 0; j < NBUNCH; j++)
+                    for (int i = 0; i < NBUNCH; i++)
                     {
-                        var send = $"ABC-Loop {i} Item {j}";
+                        var send = $"ABC-Loop {bigLoop} Item {i}";
                         NBytesWrite += send.Length;
                         allClients[i] = new EchoClient_Rfc_862(clientOptions);
-                        allWriteTasks[j] = allClients[i].WriteAsync(host, serverOptions.Service, protocol, send);
+                        allWriteTasks[i] = allClients[i].WriteAsync(host, serverOptions.Service, protocol, send);
                     }
                     await Task.WhenAll(allWriteTasks);
 
@@ -202,18 +199,18 @@ namespace Networking.RFC_Foundational_Tests
                     if (protocol == EchoClient_Rfc_862.ProtocolType.Tcp)
                     {
                         allCloseTasks = new Task<EchoClient_Rfc_862.EchoResult>[NBUNCH];
-                        for (int j = 0; j < NBUNCH; j++)
+                        for (int i = 0; i < NBUNCH; i++)
                         {
-                            allCloseTasks[j] = allClients[i].CloseAsync();
+                            allCloseTasks[i] = allClients[i].CloseAsync();
                         }
                         await Task.WhenAll(allCloseTasks);
                     }
 
-                    for (int j = 0; j < NBUNCH; j++)
+                    for (int i = 0; i < NBUNCH; i++)
                     {
                         var result = protocol == EchoClient_Rfc_862.ProtocolType.Tcp 
                             ? allCloseTasks[i].Result 
-                            : allWriteTasks[j].Result;
+                            : allWriteTasks[i].Result;
 
                         var didSucceed = result.Succeeded == EchoClient_Rfc_862.EchoResult.State.Succeeded;
                         if (!didSucceed && result.Error == SocketErrorStatus.ConnectionResetByPeer)

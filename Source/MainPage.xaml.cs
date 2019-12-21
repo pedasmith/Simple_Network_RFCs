@@ -103,7 +103,13 @@ namespace Networking
             uiSystemTestResults.Text = "Starting test run\n\n";
             int nerror = 0;
 
-            nerror += await DoFullTest();
+            uiSystemTestResults.Text += "CharGenTest_Rfc_864.Test: ";
+            Infrastructure.NError = 0;
+            await CharGenTest_Rfc_864.Test();
+            nerror += Infrastructure.NError;
+            uiSystemTestResults.Text += $" {nerror}\n";
+
+            //nerror += await DoFullTest();
         }
 
         private async Task<int> DoFullTest()

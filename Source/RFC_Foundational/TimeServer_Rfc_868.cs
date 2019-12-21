@@ -219,7 +219,7 @@ namespace Networking.RFC_Foundational
         /// <param name="args"></param>
         private async void Listener_ConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
-            Stats.NConnections++;
+            Interlocked.Increment(ref Stats.NConnections);
             var socket = args.Socket;
             Task t = TimeTcpAsync(socket);
             await t;
