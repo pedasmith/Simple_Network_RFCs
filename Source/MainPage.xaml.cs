@@ -1,6 +1,7 @@
 ﻿using Networking.RFC_Foundational;
 using Networking.RFC_Foundational_Tests;
 using Networking.Simplest_Possible_Versions;
+using System;
 using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -13,10 +14,12 @@ namespace Networking
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        public static MainPage CurrMainPage = null;
         public MainPage()
         {
             this.InitializeComponent();
             this.Loaded += MainPage_Loaded;
+            CurrMainPage = this;
         }
 
         private void MainPage_Loaded(object sender, RoutedEventArgs e)
@@ -60,11 +63,23 @@ namespace Networking
         private async void OnSelectMenu(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
             var select = (args.SelectedItem as FrameworkElement).Tag as string;
+            await DoSelectByTag(select);
+        }
+        public async Task<Grid> DoSelectByTag(string select)
+        {
+            Grid retval = null;
             foreach (var item in uiControls.Children)
             {
                 var fe = item as FrameworkElement;
-                var visibility = ((fe?.Tag as string) == select) ? Visibility.Visible : Visibility.Collapsed;
-                fe.Visibility = visibility;
+                if (fe?.Tag as string == select)
+                {
+                    fe.Visibility = Visibility.Visible;
+                    retval = fe as Grid;
+                }
+                else
+                {
+                    fe.Visibility = Visibility.Collapsed;
+                }
             }
 
             // Set up the RFC viewer. This should be rewritten so that new items
@@ -83,7 +98,12 @@ namespace Networking
                 case "Rfc_868":
                     await uiRfcViewerControl.SetContentsTitle("Time (RFC 868)", "rfc868.txt");
                     break;
+                case "Rfc_1288":
+                    await uiRfcViewerControl.SetContentsTitle("Finger (RFC 1288)", "rfc1288.txt");
+                    break;
             }
+
+            return retval;
         }
 
         public void LogTestError(string error)
@@ -162,6 +182,12 @@ namespace Networking
             Infrastructure.LogMessage -= LogTestMessage;
 
             return nerror;
+        }
+
+        private async void OnSystemTestUriClick(object sender, RoutedEventArgs e)
+        {
+            var uri = new Uri("finger://coke@cs.cmu.edu");
+            var success = await Windows.System.Launcher.LaunchUriAsync(uri);
         }
     }
 }

@@ -35,6 +35,7 @@
                     <NavigationViewItem Content="Character Generator (RFC 864)" Tag="Rfc_864" />
                     <NavigationViewItem Content="Daytime (RFC 867)" Tag="Rfc_867" />
                     <NavigationViewItem Content="ECHO (RFC 862)" Tag="Rfc_862" />
+                    <NavigationViewItem Content="Finger (RFC 1288)" Tag="Rfc_1288" />
                     <NavigationViewItem Content="Time (RFC 868)" Tag="Rfc_868" />
                     <NavigationViewItem Content="System Test" Tag="SystemTest" />
                 </NavigationView.MenuItems>
@@ -88,6 +89,14 @@
                         <local:TimeServer_Rfc_868_Control Grid.Row="1" />
                         <local:TimeClient_Rfc_868_Control Grid.Row="2" />
                     </Grid>
+                    <Grid Tag="Rfc_1288" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock>FINGER (RFC 1288)</TextBlock>
+                        <local:FingerClient_Rfc_1288_Control Grid.Row="1" />
+                    </Grid>
                     <Grid Tag="SystemTest" Visibility="Collapsed">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
@@ -98,7 +107,10 @@
                         <ScrollViewer Grid.Row="1">
                             <TextBlock x:Name="uiSystemTestResults" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                         </ScrollViewer>
-                        <Button Content="Test" Click="OnSystemTestClick" Grid.Row="2" />
+                        <StackPanel Orientation="Horizontal" Grid.Row="2">
+                            <Button Content="Full Test" Click="OnSystemTestClick" Grid.Row="2" />
+                            <Button Content="URI Test" Click="OnSystemTestUriClick" Grid.Row="2" />
+                        </StackPanel>
                     </Grid>
                 </Grid>
             </NavigationView>

@@ -25,6 +25,11 @@
         </uap:DefaultTile>
         <uap:SplashScreen Image="Assets\Icons\SplashScreen.png" />
       </uap:VisualElements>
+      <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="finger"/>
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
   <Capabilities>

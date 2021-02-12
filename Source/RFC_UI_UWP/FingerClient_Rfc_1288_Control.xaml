@@ -1,0 +1,49 @@
+﻿<UserControl
+    x:Class="Networking.RFC_UI_UWP.FingerClient_Rfc_1288_Control"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Networking.RFC_UI_UWP"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    d:DesignHeight="300"
+    d:DesignWidth="400">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="450" />
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0" Header="User@hostname" x:Name="uiAddress" Text="redacted@1436.ninja"  />
+                <TextBox Grid.Column="1" x:Name="uiService" Header="Port" Text="79" MaxWidth="250" HorizontalAlignment="Left" />
+                <ToggleSwitch Grid.Column="2" x:Name="uiWSwitch" OffContent="Normal" OnContent="Long"  VerticalAlignment="Bottom" IsOn="true"/>
+            </Grid>
+            <ComboBox ItemsSource="{Binding WellKnownHosts}" MinWidth="300" SelectedIndex="0" SelectionChanged="OnHostsListSelectionChanged" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="auto" />
+                    <ColumnDefinition Width="auto" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Content="Send!" Click="OnSend" VerticalAlignment="Bottom" />
+                <Button Grid.Column="1" Content="Close" Click="OnClose" VerticalAlignment="Bottom" />
+                <Button Grid.Column="2" Content="Clear" Click="OnClear" VerticalAlignment="Bottom" />
+            </Grid>
+        </StackPanel>
+        <TextBlock Grid.Row="1">Client Results</TextBlock>
+        <ScrollViewer Grid.Row="2" Margin="20,0,0,0">
+            <TextBlock x:Name="uiLog" TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+        </ScrollViewer>
+        <Border x:Name="uiWait" Visibility="Collapsed" Grid.Row="2" Background="White" BorderThickness="2" BorderBrush="Black" Padding="20" Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock FontSize="24">Getting data...</TextBlock>
+        </Border>
+    </Grid>
+</UserControl>

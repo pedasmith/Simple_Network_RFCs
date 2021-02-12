@@ -1,4 +1,5 @@
 ﻿using Networking;
+using Networking.RFC_UI_UWP;
 using System;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
@@ -21,6 +22,34 @@ namespace RFC_Foundational
         {
             this.InitializeComponent();
             this.Suspending += OnSuspending;
+        }
+
+        protected override async void OnActivated(IActivatedEventArgs args)
+        {
+            if (args.Kind == ActivationKind.Protocol)
+            {
+                ProtocolActivatedEventArgs eventArgs = args as ProtocolActivatedEventArgs;
+                var scheme = eventArgs.Uri.Scheme;
+                switch (scheme)
+                {
+                    case "finger":
+                        // Select the FINGER protocol tab
+                        {
+                            var mp = MainPage.CurrMainPage;
+                            if (mp == null) return;
+                            var grid = await mp.DoSelectByTag("Rfc_1288"); // finger.
+                            if (grid == null) return;
+                            // Now paw thorugh the grid looking for the finger control.
+                            foreach (var fe in grid.Children)
+                            {
+                                var fc = fe as FingerClient_Rfc_1288_Control;
+                                if (fc == null) continue;
+                                await fc.DoSendUri(eventArgs.Uri);
+                            }
+                        }
+                        break;
+                }
+            }
         }
 
         /// <summary>
