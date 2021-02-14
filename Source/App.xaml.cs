@@ -36,16 +36,27 @@ namespace RFC_Foundational
                         // Select the FINGER protocol tab
                         {
                             var mp = MainPage.CurrMainPage;
-                            if (mp == null) return;
-                            var grid = await mp.DoSelectByTag("Rfc_1288"); // finger.
-                            if (grid == null) return;
-                            // Now paw thorugh the grid looking for the finger control.
-                            foreach (var fe in grid.Children)
+                            if (mp == null)
                             {
-                                var fc = fe as FingerClient_Rfc_1288_Control;
-                                if (fc == null) continue;
-                                await fc.DoSendUri(eventArgs.Uri);
+                                MainPage.NavigateToFingerUriOnLoad = eventArgs.Uri;
+
+                                // Straight from the OnLaunched...
+                                Frame rootFrame = Window.Current.Content as Frame;
+                                if (rootFrame == null)
+                                {
+                                    rootFrame = new Frame();
+                                    rootFrame.NavigationFailed += OnNavigationFailed;
+                                    Window.Current.Content = rootFrame;
+                                }
+                                if (rootFrame.Content == null)
+                                {
+                                    rootFrame.Navigate(typeof(MainPage), ""); // no arguments
+                                }
+                                Window.Current.Activate();
+
+                                return;
                             }
+                            await mp.DoNavigateToFingerUriAsync(eventArgs.Uri);
                         }
                         break;
                 }

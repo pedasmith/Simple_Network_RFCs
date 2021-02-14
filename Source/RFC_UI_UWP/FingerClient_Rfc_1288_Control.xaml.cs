@@ -104,7 +104,7 @@ namespace Networking.RFC_UI_UWP
             DoWait(false);
         }
 
-        public async Task DoSendUri(Uri uri)
+        public async Task DoSendUri(Uri uri, TextBlock tb)
         {
             try
             {
@@ -121,6 +121,10 @@ namespace Networking.RFC_UI_UWP
                 }
                 else
                 {
+                    // Update UI from the URI via the request
+                    uiAddress.Text = request.ToStringAtFormat();
+                    uiWSwitch.IsOn = request.WhoIsMode;
+
                     if (client == null)
                     {
                         client = new FingerClient_Rfc_1288();

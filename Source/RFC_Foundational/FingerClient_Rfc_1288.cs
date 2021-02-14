@@ -39,6 +39,14 @@ namespace Networking.RFC_Foundational
                 return data;
             }
 
+            public string ToStringAtFormat()
+            {
+                string retval = string.IsNullOrEmpty(User) ? "" : User;
+                retval += "@";
+                retval += Host.CanonicalName;
+                return retval;
+            }
+
             /// <summary>
             /// Converts input like user@example.com or @example.com or example.com into a request.
             /// Does not handle uri (see FromUri for that)

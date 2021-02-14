@@ -1,5 +1,6 @@
 ﻿using Networking.RFC_Foundational;
 using Networking.RFC_Foundational_Tests;
+using Networking.RFC_UI_UWP;
 using Networking.Simplest_Possible_Versions;
 using System;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ namespace Networking
     public sealed partial class MainPage : Page
     {
         public static MainPage CurrMainPage = null;
+        public static Uri NavigateToFingerUriOnLoad = null;
         public MainPage()
         {
             this.InitializeComponent();
@@ -22,7 +24,7 @@ namespace Networking
             CurrMainPage = this;
         }
 
-        private void MainPage_Loaded(object sender, RoutedEventArgs e)
+        private async void MainPage_Loaded(object sender, RoutedEventArgs e)
         {
             DisplayRequestRequestActive(true); // Windows will turn this off automatically.
             uiNetworkInfo.Text = "\n";
@@ -32,6 +34,13 @@ namespace Networking
             foreach (var host in hosts)
             {
                 uiNetworkInfo.Text += $"{host.CanonicalName}\n";
+            }
+
+            if (MainPage.NavigateToFingerUriOnLoad != null)
+            {
+                var uri = MainPage.NavigateToFingerUriOnLoad;
+                MainPage.NavigateToFingerUriOnLoad = null;
+                await DoNavigateToFingerUriAsync(uri);
             }
 
         }
@@ -65,7 +74,32 @@ namespace Networking
             var select = (args.SelectedItem as FrameworkElement).Tag as string;
             await DoSelectByTag(select);
         }
-        public async Task<Grid> DoSelectByTag(string select)
+
+        public async Task DoNavigateToFingerUriAsync(Uri uri)
+        {
+            var tb = uiNetworkInfo;
+
+            tb.Text += "DBG Navigate to URL\n";
+            tb.Text += $"URI = {uri}\n";
+            var grid = await DoSelectByTag("Rfc_1288"); // finger.
+            if (grid == null)
+            {
+                return;
+            }
+
+            // Now paw thorugh the grid looking for the finger control.
+            if (uri != null)
+            {
+                foreach (var fe in grid.Children)
+                {
+                    var fc = fe as FingerClient_Rfc_1288_Control;
+                    if (fc == null) continue;
+                    await fc.DoSendUri(uri, tb);
+                }
+            }
+        }
+
+        private async Task<Grid> DoSelectByTag(string select)
         {
             Grid retval = null;
             foreach (var item in uiControls.Children)
