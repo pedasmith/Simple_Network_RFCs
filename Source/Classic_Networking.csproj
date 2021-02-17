@@ -132,12 +132,18 @@
     <Compile Include="RFC_Foundational\DaytimeClient_Rfc_867.cs" />
     <Compile Include="RFC_Foundational\DaytimeServer_Rfc_867.cs" />
     <Compile Include="RFC_Foundational\EchoClient_Rfc_862.cs" />
+    <Compile Include="RFC_Foundational\FingerClasses_Rfc_1288.cs" />
     <Compile Include="RFC_Foundational\FingerClient_Rfc_1288.cs" />
+    <Compile Include="RFC_Foundational\FingerServer_Rfc_1288.cs" />
+    <Compile Include="RFC_Foundational\NetworkStreamUtilities.cs" />
     <Compile Include="RFC_Foundational\TimeClient_Rfc_868.cs" />
     <Compile Include="RFC_Foundational\TimeServer_Rfc_868.cs" />
     <Compile Include="RFC_Foundational_Tests\CharGenTest_Rfc_864.cs" />
     <Compile Include="RFC_Foundational_Tests\DaytimeTest_Rfc_867.cs" />
     <Compile Include="RFC_Foundational_Tests\EchoTest_Rfc_862.cs" />
+    <Compile Include="RFC_UI_UWP\FingerServer_Rfc_1288_Control.xaml.cs">
+      <DependentUpon>FingerServer_Rfc_1288_Control.xaml</DependentUpon>
+    </Compile>
     <Compile Include="RFC_Foundational_Tests\Infrastructure.cs" />
     <Compile Include="RFC_Foundational_Tests\TimeTest_Rfc_868.cs" />
     <Compile Include="RFC_UI_UWP\CharGenClient_Rfc_864_Control.xaml.cs">
@@ -240,6 +246,7 @@
     <Content Include="Assets\RFC\rfc1288.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Assets\RFC\rfc742.txt" />
     <Content Include="Assets\RFC\rfc862.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -257,6 +264,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="RFC_UI_UWP\FingerServer_Rfc_1288_Control.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="RFC_UI_UWP\CharGenClient_Rfc_864_Control.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -320,6 +331,7 @@
     <None Include="Assets\Comments\About_Daytime_Protocol_Rfc_867.md" />
     <None Include="Assets\Comments\About_Echo_Protocol_Rfc_862.md" />
     <None Include="Assets\Comments\About_Stream_Sockets.md" />
+    <None Include="Assets\RFC\rfc1288_and_url_comments.md" />
     <None Include="Classic_Networking_TemporaryKey.pfx" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

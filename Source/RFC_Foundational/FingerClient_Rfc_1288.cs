@@ -17,103 +17,6 @@ namespace Networking.RFC_Foundational
     /// </summary>
     class FingerClient_Rfc_1288
     {
-        public class FingerRequest
-        {
-            public FingerRequest(HostName host, string user, bool whoIsMode)
-            {
-                Host = host;
-                User = user;
-                WhoIsMode = whoIsMode;
-            }
-            public HostName Host { get; set; }
-            public string User { get; set; }
-            public bool WhoIsMode { get; set; } = false; // the /W switch aka the -l long view mode
-            public string WSwitch {  get { return WhoIsMode ? "/W" : null; } }
-            public string Port { get; set; } = DefaultService;
-            const string DefaultService = "79";
-
-            public override string ToString()
-            {
-                var wswitchSpace = WhoIsMode && !string.IsNullOrEmpty(User) ? " " : "";
-                var data = WSwitch + wswitchSpace + User + "\r\n";
-                return data;
-            }
-
-            public string ToStringAtFormat()
-            {
-                string retval = string.IsNullOrEmpty(User) ? "" : User;
-                retval += "@";
-                retval += Host.CanonicalName;
-                return retval;
-            }
-
-            /// <summary>
-            /// Converts input like user@example.com or @example.com or example.com into a request.
-            /// Does not handle uri (see FromUri for that)
-            /// </summary>
-            /// <param name="address"></param>
-            /// <param name="wswitch"></param>
-            /// <returns></returns>
-            public static FingerRequest FromString(String address, bool wswitch=false)
-            {
-                FingerClient_Rfc_1288.FingerRequest request = null;
-                var userSplit = address.Split(new char[] { '@' }, 2);
-                switch (userSplit.Length)
-                {
-                    case 1:
-                        {
-                            var host = new HostName(userSplit[0]);
-                            request = new FingerClient_Rfc_1288.FingerRequest(host, "", wswitch);
-                            break;
-                        }
-                    case 2:
-                        {
-                            var user = userSplit[0];
-                            var host = new HostName(userSplit[1]);
-                            request = new FingerClient_Rfc_1288.FingerRequest(host, user, wswitch);
-                            break;
-                        }
-                }
-                return request;
-            }
-            public static FingerRequest FromUri (Uri uri)
-            {
-                // See: https://tools.ietf.org/html/draft-ietf-uri-url-finger-03
-                // finger://host[:port][/<request>]
-                // examples from spec: finger://space.mit.edu/nasanews finger://status.nlak.net
-                if (uri.Scheme.ToLowerInvariant() != "finger")
-                {
-                    throw new Exception($"ERROR: FingerRequest requires URI that starts with finger://");
-                }
-                // The LocalPath will be //W user for urls like finger://example.com//W%20user
-                bool isW = false;
-                string user = uri.LocalPath;
-                string port = DefaultService;
-                if (uri.LocalPath.StartsWith ("//W"))
-                {
-                    user = uri.LocalPath.Substring(3).Trim();
-                    isW = true;
-                }
-                else if (uri.LocalPath.StartsWith("/"))
-                {
-                    user = uri.LocalPath.Substring(1);
-                }
-                // technical violation of the url spec: I allow finger://user@example.com and finger://user@example.com//W
-                // In both cases, the user will be the one before the @sign/
-                // If there's both a real path AND an user@ given, the user@ will take priority.
-                if (!string.IsNullOrEmpty(uri.UserInfo))
-                {
-                    user = uri.UserInfo;
-                }
-                if (!uri.IsDefaultPort)
-                {
-                    port = uri.Port.ToString(); // is -1 by default for finger://
-                }
-                var retval = new FingerRequest(new HostName (uri.Host), user, isW);
-                retval.Port = port;
-                return retval;
-            }
-        }
 
         /// <summary>
         /// The network value returned by the WriteAsync() calls
@@ -168,6 +71,11 @@ namespace Networking.RFC_Foundational
         {
             public enum Verbosity { None, Normal, Verbose }
             public Verbosity LoggingLevel { get; set; } = ClientOptions.Verbosity.Normal;
+
+            /// <summary>
+            /// Maximum total wait time for a connection. Keep it short: good servers are generally very fast to connect.
+            /// </summary>
+            public int MaxConnectTimeInMilliseconds { get; set; } = 1_000;
         }
         public ClientOptions Options { get; internal set; } = new ClientOptions();
 
@@ -209,7 +117,7 @@ namespace Networking.RFC_Foundational
         }
 
         public enum ProtocolType { Tcp, }
-        public async Task<FingerResult> WriteAsync(FingerRequest request)
+        public async Task<FingerResult> WriteAsync(ParsedFingerCommand request)
         {
             var data = request.ToString();
             var datanice = data.Replace("\r\n", "");
@@ -219,74 +127,93 @@ namespace Networking.RFC_Foundational
             try
             {
                 var tcpSocket = new StreamSocket();
-                await tcpSocket.ConnectAsync(request.Host, request.Port);
-                // Everything that's sent will be ignored.
-                if (!string.IsNullOrEmpty(data))
+                var connectTask = tcpSocket.ConnectAsync(request.SendToHost, request.SendToPort);
+
+                var taskList = new Task[]
                 {
-                    var dw = new DataWriter(tcpSocket.OutputStream);
-                    dw.WriteString(data);
-                    await dw.StoreAsync();
-                    Log(ClientOptions.Verbosity.Normal, $"Finger sending command {datanice}\n");
+                        connectTask.AsTask(),
+                        Task.Delay (Options.MaxConnectTimeInMilliseconds)
+                };
+                var waitResult = await Task.WhenAny(taskList);
+                if (waitResult == taskList[1])
+                {
+                    Stats.NExceptions++; // mark it as an exception -- it would have failed if we didn't time out
+                    Log($"TIMEOUT while connecting to {request.SendToHost} {request.SendToPort}");
+                    Log($"Unable to send command {datanice}\n");
+
+                    var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
+                    return FingerResult.MakeFailed(SocketErrorStatus.ConnectionTimedOut, faildelta);
                 }
-                Stats.NWrites++;
-
-                // Now read everything
-                var s = tcpSocket.InputStream;
-                var buffer = new Windows.Storage.Streams.Buffer(2048);
-
-                string stringresult = "";
-                var keepGoing = true;
-                while (keepGoing)
+                else
                 {
-                    try
+                    // Connect is OK
+                    if (!string.IsNullOrEmpty(data))
                     {
-                        var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
-                        /* This is the syntax that the editor will suggest. There's a 
-                         * much simpler syntax (below) that's syntactic sugar over this.
-                        read.Progress = new AsyncOperationProgressHandler<IBuffer, uint>(
-                            (operation, progress) =>
+                        var dw = new DataWriter(tcpSocket.OutputStream);
+                        dw.WriteString(data);
+                        await dw.StoreAsync();
+                        Log(ClientOptions.Verbosity.Normal, $"Finger sending command {datanice}\n");
+                    }
+                    Stats.NWrites++;
+
+                    // Now read everything
+                    var s = tcpSocket.InputStream;
+                    var buffer = new Windows.Storage.Streams.Buffer(1024*64); // read in lots of the data
+
+                    string stringresult = "";
+                    var keepGoing = true;
+                    while (keepGoing)
+                    {
+                        try
+                        {
+                            var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
+                            /* This is the syntax that the editor will suggest. There's a 
+                             * much simpler syntax (below) that's syntactic sugar over this.
+                            read.Progress = new AsyncOperationProgressHandler<IBuffer, uint>(
+                                (operation, progress) =>
+                                {
+                                    var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
+                                    Log(ClientOptions.Verbosity.Verbose, $"Daytime Progress count={progress} status={operation.Status} errorcode={err}");
+                                });
+                            */
+                            read.Progress = (operation, progress) =>
                             {
                                 var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
-                                Log(ClientOptions.Verbosity.Verbose, $"Daytime Progress count={progress} status={operation.Status} errorcode={err}");
-                            });
-                        */
-                        read.Progress = (operation, progress) =>
-                        {
-                            var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
-                            Log(ClientOptions.Verbosity.Verbose, $"Finger Progress count={progress} status={operation.Status} errorcode={err}");
-                        };
-                        var result = await read;
-                        if (result.Length != 0)
-                        {
-                            var options = BufferToString.ToStringOptions.ProcessCrLf | BufferToString.ToStringOptions.ProcessTab;
-                            var partialresult = BufferToString.ToString(result, options);
-                            stringresult += partialresult;
-                            Log($"{partialresult}"); // This will be printed on the user's screen.
+                                Log(ClientOptions.Verbosity.Verbose, $"Finger Progress count={progress} status={operation.Status} errorcode={err}");
+                            };
+                            var result = await read;
+                            if (result.Length != 0)
+                            {
+                                var options = BufferToString.ToStringOptions.ProcessCrLf | BufferToString.ToStringOptions.ProcessTab;
+                                var partialresult = BufferToString.ToString(result, options);
+                                stringresult += partialresult;
+                                Log($"{partialresult}"); // This will be printed on the user's screen.
+                            }
+                            else
+                            {
+                                keepGoing = false;
+                                Log(ClientOptions.Verbosity.Verbose, $"Read completed with zero bytes; closing");
+                            }
                         }
-                        else
+                        catch (Exception ex2)
                         {
                             keepGoing = false;
-                            Log(ClientOptions.Verbosity.Verbose, $"Read completed with zero bytes; closing");
+                            Stats.NExceptions++;
+                            Log($"EXCEPTION while reading: {ex2.Message} {ex2.HResult:X}");
+
+                            var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
+                            return FingerResult.MakeFailed(ex2, faildelta);
                         }
                     }
-                    catch (Exception ex2)
-                    {
-                        keepGoing = false;
-                        Stats.NExceptions++;
-                        Log($"EXCEPTION while reading: {ex2.Message} {ex2.HResult:X}");
 
-                        var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
-                        return FingerResult.MakeFailed(ex2, faildelta);
-                    }
+                    var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
+                    return FingerResult.MakeSucceeded(stringresult, delta);
                 }
-
-                var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
-                return FingerResult.MakeSucceeded(stringresult, delta);
             }
             catch (Exception ex)
             {
                 Stats.NExceptions++;
-                Log($"ERROR: Client: Writing {datanice} to {request.Host} exception {ex.Message}");
+                Log($"ERROR: Client: Writing {datanice} to {request.SendToHost} exception {ex.Message}");
                 var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
                 return FingerResult.MakeFailed(ex, delta);
             }

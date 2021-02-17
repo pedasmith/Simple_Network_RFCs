@@ -7,7 +7,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     d:DesignHeight="300"
-    d:DesignWidth="400">
+    d:DesignWidth="800">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -22,10 +22,15 @@
                     <ColumnDefinition Width="auto" />
                     <ColumnDefinition Width="auto" />
                 </Grid.ColumnDefinitions>
-                <TextBox Grid.Column="0" Header="User@hostname" x:Name="uiAddress" Text="redacted@1436.ninja"  />
-                <TextBox Grid.Column="1" x:Name="uiService" Header="Port" Text="79" MaxWidth="250" HorizontalAlignment="Left" />
+                <TextBox Grid.Column="0" Header="User@hostname" x:Name="uiAddress" Text="redacted@1436.ninja" KeyDown="OnUserKeyDown"  />
+                <TextBox Grid.Column="1" x:Name="uiService" Header="Port" Text="7979" MaxWidth="250" HorizontalAlignment="Left" />
                 <ToggleSwitch Grid.Column="2" x:Name="uiWSwitch" OffContent="Normal" OnContent="Long"  VerticalAlignment="Bottom" IsOn="true"/>
             </Grid>
+            <TextBlock FontStyle="Italic" TextWrapping="Wrap" IsTextSelectionEnabled="True">
+                <Bold>Example finger values:</Bold> user@example.com finger://user@example.com finger://example.com/user
+                <LineBreak/>finger://example.com:7979//W user (the space is converted to %20)
+                <LineBreak/>finger://example.com:7979/user @hostA@hostB
+            </TextBlock>
             <ComboBox ItemsSource="{Binding WellKnownHosts}" MinWidth="300" SelectedIndex="0" SelectionChanged="OnHostsListSelectionChanged" />
             <Grid>
                 <Grid.ColumnDefinitions>

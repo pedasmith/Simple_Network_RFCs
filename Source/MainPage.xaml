@@ -93,9 +93,11 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="auto" />
                             <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <TextBlock>FINGER (RFC 1288)</TextBlock>
-                        <local:FingerClient_Rfc_1288_Control Grid.Row="1" />
+                        <local:FingerServer_Rfc_1288_Control Grid.Row="1" />
+                        <local:FingerClient_Rfc_1288_Control Grid.Row="2" />
                     </Grid>
                     <Grid Tag="SystemTest" Visibility="Collapsed">
                         <Grid.RowDefinitions>

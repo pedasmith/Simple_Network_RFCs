@@ -77,10 +77,6 @@ namespace Networking
 
         public async Task DoNavigateToFingerUriAsync(Uri uri)
         {
-            var tb = uiNetworkInfo;
-
-            tb.Text += "DBG Navigate to URL\n";
-            tb.Text += $"URI = {uri}\n";
             var grid = await DoSelectByTag("Rfc_1288"); // finger.
             if (grid == null)
             {
@@ -94,7 +90,7 @@ namespace Networking
                 {
                     var fc = fe as FingerClient_Rfc_1288_Control;
                     if (fc == null) continue;
-                    await fc.DoSendUri(uri, tb);
+                    await fc.DoSendUri(uri);
                 }
             }
         }

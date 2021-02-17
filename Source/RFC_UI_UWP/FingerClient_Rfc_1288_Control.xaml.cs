@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.Core;
-using Windows.Networking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Media;
@@ -20,38 +18,27 @@ namespace Networking.RFC_UI_UWP
             this.InitializeComponent();
             this.DataContext = this; // Set up the DataContext so the data binding to the WellKnownHosts list works
         }
+
         /// <summary>
         /// List of well know hosts/services that the user can try. These aren't guaranteed to work!
         /// </summary>
-        public List<HostService> WellKnownHosts { get; } = new List<HostService>()
+        public List<string> WellKnownHosts { get; } = new List<string>()
         {
-            new HostService("coke@cs.cmu.edu"),
+            "coke@cs.cmu.edu",
 
-            new HostService("phlog@1436.ninja"),
-            new HostService("redacted@1436.ninja"),
-            new HostService("twitpher@1436.ninja"),
+            "phlog@1436.ninja",
+            "redacted@1436.ninja",
+            "twitpher@1436.ninja",
 
+            "@finger.farm",
+            "about@finger.farm",
+            "help@finger.farm",
+            "finger@finger.farm",
+            "info@finger.farm",
 
-            new HostService("@finger.farm"),
-            new HostService("about@finger.farm"),
-            new HostService("help@finger.farm"),
-            new HostService("finger@finger.farm"),
-            new HostService("info@finger.farm"),
+            "@telehack.com",
         };
-        public class HostService
-        {
-            public HostService(string host, string service = null)
-            {
-                Host = host;
-                if (service != null) Service = service;
-            }
-            public string Host { get; set; } = "user@example.com";
-            public string Service { get; set; } = "79";
-            public override string ToString()
-            {
-                return Host;
-            }
-        }
+
 
         FingerClient_Rfc_1288 client;
 
@@ -71,23 +58,17 @@ namespace Networking.RFC_UI_UWP
                 // OR finger://user@example.com//W
                 // OR finger://example.com/user
 
-                Uri uri;
-                bool isUri = Uri.TryCreate(uiAddress.Text.Trim(), UriKind.Absolute, out uri);
-                FingerClient_Rfc_1288.FingerRequest request = null;
-                if (isUri)
-                {
-                    request = FingerClient_Rfc_1288.FingerRequest.FromUri(uri);
-                }
-                else
-                {
-                    request = FingerClient_Rfc_1288.FingerRequest.FromString(uiAddress.Text.Trim(), uiWSwitch.IsOn);
-                }
+                ParsedFingerCommand request = ParsedFingerCommand.ParseFromUxString(uiAddress.Text.Trim(), uiService.Text, uiWSwitch.IsOn);
+
                 if(request == null)
                 {
                     Client_LogEvent(this, $"ERROR: Client: can't parse finger {uiAddress.Text}. Should be person@example.com (for example)");
                 }
                 else
                 {
+                    uiService.Text = request.SendToPort;
+                    uiWSwitch.IsOn = request.HasWSwitch;
+
                     if (client == null)
                     {
                         client = new FingerClient_Rfc_1288();
@@ -104,7 +85,12 @@ namespace Networking.RFC_UI_UWP
             DoWait(false);
         }
 
-        public async Task DoSendUri(Uri uri, TextBlock tb)
+        /// <summary>
+        /// Used when there's a URI to send seperate from the normal UI.
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <returns></returns>
+        public async Task DoSendUri(Uri uri)
         {
             try
             {
@@ -114,7 +100,7 @@ namespace Networking.RFC_UI_UWP
                 // OR finger://example.com/user
                 // OR finger://example.com//W%20user
 
-                var request = FingerClient_Rfc_1288.FingerRequest.FromUri(uri);
+                var request = ParsedFingerCommand.ParseFromUri(uri);
                 if (request == null)
                 {
                     Client_LogEvent(this, $"ERROR: Client: can't parse finger {uri}. Should be finger://user@example.com (for example)");
@@ -122,8 +108,9 @@ namespace Networking.RFC_UI_UWP
                 else
                 {
                     // Update UI from the URI via the request
-                    uiAddress.Text = request.ToStringAtFormat();
-                    uiWSwitch.IsOn = request.WhoIsMode;
+                    uiAddress.Text = request.OriginalCommand;
+                    uiService.Text = request.SendToPort;
+                    uiWSwitch.IsOn = request.HasWSwitch;
 
                     if (client == null)
                     {
@@ -176,15 +163,26 @@ namespace Networking.RFC_UI_UWP
         private void OnHostsListSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems.Count != 1) return;
-            var item = e.AddedItems[0] as HostService;
+            var item = e.AddedItems[0] as string;
             if (item == null) return;
-            uiAddress.Text = item.Host;
-            uiService.Text = item.Service;
+            uiAddress.Text = item;
+            var cmd = ParsedFingerCommand.ParseFromUxString(item, uiService.Text, uiWSwitch.IsOn);
+            uiService.Text = cmd.SendToPort;
+            uiWSwitch.IsOn = cmd.HasWSwitch;
         }
 
         private void OnClear(object sender, RoutedEventArgs e)
         {
             uiLog.Text = "";
+        }
+
+        private void OnUserKeyDown(object sender, Windows.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
+            {
+                e.Handled = true;
+                OnSend(null, null);
+            }
         }
     }
 }

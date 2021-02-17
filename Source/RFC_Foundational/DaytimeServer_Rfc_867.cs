@@ -249,7 +249,7 @@ namespace Networking.RFC_Foundational
                     }
                     else
                     {
-                        keepGoing = false;
+                        keepGoing = false; // Timed out.
                     }
                 }
                 catch (Exception ex2)
