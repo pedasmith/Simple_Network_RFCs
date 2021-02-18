@@ -26,7 +26,7 @@ namespace Networking.Simplest_Possible_Versions
                     new Windows.Networking.HostName("localhost"),
                     server.Options.Service,
                     CharGenClient_Rfc_864.ProtocolType.Tcp);
-                // TODO: remove magic value?
+                // MAGIC: why is 100 the right value?
                 // Wait for the CharGen to have worked. The server is right here, so the
                 // CharGen should be almost instantaneous.
                 await Task.Delay(100);

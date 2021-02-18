@@ -348,7 +348,7 @@ namespace Networking.RFC_Foundational
                 var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                 return CharGenResult.MakeSucceeded(stringresult, delta);
             }
-            else // socket is done TODO: change comment everywhere for UDP
+            else // socket is done
             {
                 var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
                 return CharGenResult.MakeFailed(SocketErrorStatus.HttpInvalidServerResponse, delta);

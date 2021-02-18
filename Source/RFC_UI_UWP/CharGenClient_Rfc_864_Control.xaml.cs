@@ -42,7 +42,7 @@ namespace Networking.RFC_UI_UWP
                 if (service != null) Service = service;
             }
             public string Host { get; set; } = "example.com";
-            public string Service { get; set; } = "19"; //TODO: all these services should be more centralized in just the foundational server code
+            public string Service { get; set; } = CharGenServer_Rfc_864.ServerOptions.RfcService; 
             public override string ToString()
             {
                 return Host;

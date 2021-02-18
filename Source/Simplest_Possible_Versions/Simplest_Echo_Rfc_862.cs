@@ -21,7 +21,7 @@ namespace Networking.Simplest_Possible_Versions
                     server.Options.Service,
                     EchoClient_Rfc_862.ProtocolType.Tcp,
                     "Hello, echo server!");
-                // TODO: remove magic value?
+                // MAGIC: why is 100 the right value?
                 // Wait for the echo to have worked. The server is right here, so the
                 // echo should be almost instantaneous.
                 await Task.Delay(100);

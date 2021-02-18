@@ -119,7 +119,7 @@ namespace Networking.RFC_Foundational
             switch (protocolType)
             {
                 case ProtocolType.Tcp:
-                    return await WriteTcpAsync(address, service, data); //TODO: rename to WriteTcpAsync everywhere and WriteUdpAsync, too
+                    return await WriteTcpAsync(address, service, data);
                 case ProtocolType.Udp:
                     return await WriteUdpAsync(address, service, data);
             }
@@ -304,7 +304,7 @@ namespace Networking.RFC_Foundational
                 var delta = DateTime.UtcNow.Subtract(UdpStartTime).TotalSeconds;
                 return DaytimeResult.MakeSucceeded(stringresult, delta);
             }
-            else
+            else // socket is done
             {
                 var stringresult = "ERROR:No results!";
                 Log($"DAYTIME: CLIENT:{stringresult}");

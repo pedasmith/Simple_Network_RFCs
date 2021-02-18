@@ -39,7 +39,7 @@ namespace Networking.RFC_UI_UWP
                 if (service != null) Service = service;
             }
             public string Host { get; set; } = "example.com";
-            public string Service { get; set; } = "37";
+            public string Service { get; set; } = TimeServer_Rfc_868.ServerOptions.RfcService;
             public override string ToString()
             {
                 return Host;

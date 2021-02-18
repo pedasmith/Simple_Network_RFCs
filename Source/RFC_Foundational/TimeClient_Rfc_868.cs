@@ -267,7 +267,7 @@ namespace Networking.RFC_Foundational
                 var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
                 return TimeResult.MakeSucceeded(result.ToUnixTimeSeconds(), stringresult, delta);
             }
-            else
+            else // socket is done
             {
                 var stringresult = "ERROR:No results!";
                 Log($"TIME: CLIENT:{stringresult}");
