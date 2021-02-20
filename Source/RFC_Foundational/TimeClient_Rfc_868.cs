@@ -170,10 +170,6 @@ namespace Networking.RFC_Foundational
             }
         }
 
-        private void TcpReadProgress(uint count)
-        {
-
-        }
 
         ConcurrentDictionary<string, TimeResult> UdpResults = new ConcurrentDictionary<string, TimeResult>();
         DateTime UdpStartTime;

@@ -215,7 +215,7 @@ namespace Networking.RFC_Foundational
             UdpStartTime = DateTime.UtcNow;
             try
             {
-                var udpSocket = new DatagramSocket(); //TODO: really use the same socket each time?
+                var udpSocket = new DatagramSocket();
                 await udpSocket.ConnectAsync(address, service);
                 udpSocket.MessageReceived += UdpSocket_MessageReceived;
 
@@ -274,7 +274,7 @@ namespace Networking.RFC_Foundational
             try
             {
                 var dr = args.GetDataReader();
-                var udpResult = ReadUdp(dr);
+                var udpResult = ReadUdpDataReader(dr);
                 UdpResults.TryAdd(sender.Information.LocalPort, udpResult);
             }
             catch (Exception ex)
@@ -292,7 +292,7 @@ namespace Networking.RFC_Foundational
             sender.Dispose();
         }
 
-        private DaytimeResult ReadUdp(DataReader dr) //TODO: directly read buffer instead of weirding out the DataReader?
+        private DaytimeResult ReadUdpDataReader(DataReader dr)
         {
             uint count = dr.UnconsumedBufferLength;
             if (count > 0)

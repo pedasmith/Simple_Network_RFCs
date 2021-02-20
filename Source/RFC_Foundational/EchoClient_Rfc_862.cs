@@ -165,7 +165,7 @@ namespace Networking.RFC_Foundational
                     await TcpReadTask;
                 }
             }
-            if (udpSocket != null) //TODO: what other clients need to close their UDP sockets?
+            if (udpSocket != null)
             {
                 udpDw.Dispose();
                 udpDw = null;

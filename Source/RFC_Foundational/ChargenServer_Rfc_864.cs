@@ -26,7 +26,6 @@ namespace Networking.RFC_Foundational
             /// <summary>
             /// Says how quickly the server will send data to the client. This isn't a speed competition,
             /// so by default I keep the speed low.
-            /// TODO: when set to 0, does the code still work?
             /// </summary>
             public int TimeBetweenWritesInMilliseconds { get; set; } = 500; 
 
@@ -301,8 +300,7 @@ namespace Networking.RFC_Foundational
 
             Log(ServerOptions.Verbosity.Verbose, $"SERVER: TCP Stream closing down the current writing socket");
 
-            //TODO: it is critical?
-            tcpSocket.Dispose(); // TODO: this comment makes no sense. The dispose is hardly critical; without it the client won't ever finish reading our output
+            tcpSocket.Dispose(); 
         }
 
 
