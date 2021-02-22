@@ -16,29 +16,52 @@ namespace Networking.RFC_UI_UWP
         public FingerClient_Rfc_1288_Control()
         {
             this.InitializeComponent();
+
+            var serviceList = LittleTcpService_Rfc_848.ServiceList;
+            foreach (var serviceItem in serviceList)
+            {
+                if (serviceItem.ServiceName == "finger")
+                {
+                    WellKnownHosts.Add(new HostService(serviceItem.HostAddress.CanonicalName, serviceItem.Service));
+                }
+            }
+
             this.DataContext = this; // Set up the DataContext so the data binding to the WellKnownHosts list works
         }
 
         /// <summary>
         /// List of well know hosts/services that the user can try. These aren't guaranteed to work!
         /// </summary>
-        public List<string> WellKnownHosts { get; } = new List<string>()
+        public List<HostService> WellKnownHosts { get; } = new List<HostService>()
         {
-            "coke@cs.cmu.edu",
+            new HostService("coke@cs.cmu.edu"),
 
-            "phlog@1436.ninja",
-            "redacted@1436.ninja",
-            "twitpher@1436.ninja",
+            new HostService("phlog@1436.ninja"),
+            new HostService("redacted@1436.ninja"),
+            new HostService("twitpher@1436.ninja"),
 
-            "@finger.farm",
-            "about@finger.farm",
-            "help@finger.farm",
-            "finger@finger.farm",
-            "info@finger.farm",
+            new HostService("@finger.farm"),
+            new HostService("about@finger.farm"),
+            new HostService("help@finger.farm"),
+            new HostService("finger@finger.farm"),
+            new HostService("info@finger.farm"),
 
-            "@telehack.com",
+            new HostService("@telehack.com"),
         };
-
+        public class HostService
+        {
+            public HostService(string host, string service = null)
+            {
+                Host = host;
+                if (service != null) Service = service;
+            }
+            public string Host { get; set; } = "example.com";
+            public string Service { get; set; } = FingerServer_Rfc_1288.ServerOptions.RfcService;
+            public override string ToString()
+            {
+                return Host;
+            }
+        }
 
         FingerClient_Rfc_1288 client;
 
@@ -75,7 +98,7 @@ namespace Networking.RFC_UI_UWP
                         client.LogEvent += Client_LogEvent;
                     }
 
-                    await client.WriteAsync(request);
+                    await client.WriteTcpAsync(request);
                 }
             }
             catch (Exception ex)
@@ -118,7 +141,7 @@ namespace Networking.RFC_UI_UWP
                         client.LogEvent += Client_LogEvent;
                     }
 
-                    await client.WriteAsync(request);
+                    await client.WriteTcpAsync(request);
                 }
             }
             catch (Exception ex)
@@ -163,10 +186,11 @@ namespace Networking.RFC_UI_UWP
         private void OnHostsListSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (e.AddedItems.Count != 1) return;
-            var item = e.AddedItems[0] as string;
+            var item = e.AddedItems[0] as HostService;
             if (item == null) return;
-            uiAddress.Text = item;
-            var cmd = ParsedFingerCommand.ParseFromUxString(item, uiService.Text, uiWSwitch.IsOn);
+            uiAddress.Text = item.Host;
+            uiService.Text = item.Service;
+            var cmd = ParsedFingerCommand.ParseFromUxString(uiAddress.Text, uiService.Text, uiWSwitch.IsOn);
             uiService.Text = cmd.SendToPort;
             uiWSwitch.IsOn = cmd.HasWSwitch;
         }

@@ -135,6 +135,7 @@
     <Compile Include="RFC_Foundational\FingerClasses_Rfc_1288.cs" />
     <Compile Include="RFC_Foundational\FingerClient_Rfc_1288.cs" />
     <Compile Include="RFC_Foundational\FingerServer_Rfc_1288.cs" />
+    <Compile Include="RFC_Foundational\LittleTcpService_Rfc_848.cs" />
     <Compile Include="RFC_Foundational\NetworkStreamUtilities.cs" />
     <Compile Include="RFC_Foundational\TimeClient_Rfc_868.cs" />
     <Compile Include="RFC_Foundational\TimeServer_Rfc_868.cs" />
@@ -175,6 +176,7 @@
     <Compile Include="RFC_UI_UWP\FingerClient_Rfc_1288_Control.xaml.cs">
       <DependentUpon>FingerClient_Rfc_1288_Control.xaml</DependentUpon>
     </Compile>
+    <Compile Include="RFC_UI_UWP\HostService.cs" />
     <Compile Include="RFC_UI_UWP\TimeClient_Rfc_868_Control.xaml.cs">
       <DependentUpon>TimeClient_Rfc_868_Control.xaml</DependentUpon>
     </Compile>
@@ -247,6 +249,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\RFC\rfc742.txt" />
+    <Content Include="Assets\RFC\rfc848.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Assets\RFC\rfc862.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

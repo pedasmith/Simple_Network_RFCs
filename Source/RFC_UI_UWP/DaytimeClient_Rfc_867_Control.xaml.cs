@@ -15,6 +15,16 @@ namespace Networking.RFC_UI_UWP
         public DaytimeClient_Rfc_867_Control()
         {
             this.InitializeComponent();
+
+            var serviceList = LittleTcpService_Rfc_848.ServiceList;
+            foreach (var serviceItem in serviceList)
+            {
+                if (serviceItem.ServiceName == "daytime")
+                {
+                    WellKnownHosts.Add(new HostService(serviceItem.HostAddress.CanonicalName, serviceItem.Service));
+                }
+            }
+
             this.DataContext = this; // Set up the DataContext so the data binding to the WellKnownHosts list works
         }
 

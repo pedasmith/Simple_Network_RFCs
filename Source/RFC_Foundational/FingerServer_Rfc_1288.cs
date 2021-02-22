@@ -61,7 +61,7 @@ namespace Networking.RFC_Foundational
             public string Service { get; set; } = "79";
 
             /// <summary>
-            /// The RFC compatible service.
+            /// The RFC compatible service (port 79).
             /// </summary>
             public static string RfcService = "79";
             /// <summary>

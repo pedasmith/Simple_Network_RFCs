@@ -117,7 +117,7 @@ namespace Networking.RFC_Foundational
         }
 
         public enum ProtocolType { Tcp, }
-        public async Task<FingerResult> WriteAsync(ParsedFingerCommand request)
+        public async Task<FingerResult> WriteTcpAsync(ParsedFingerCommand request)
         {
             var data = request.ToString();
             var datanice = data.Replace("\r\n", "");

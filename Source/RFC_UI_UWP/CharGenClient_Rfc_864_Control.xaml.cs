@@ -14,6 +14,16 @@ namespace Networking.RFC_UI_UWP
         public CharGenClient_Rfc_864_Control()
         {
             this.InitializeComponent();
+
+            var serviceList = LittleTcpService_Rfc_848.ServiceList;
+            foreach (var serviceItem in serviceList)
+            {
+                if (serviceItem.ServiceName == "chargen")
+                {
+                    WellKnownHosts.Add(new HostService(serviceItem.HostAddress.CanonicalName, serviceItem.Service));
+                }
+            }
+
             this.DataContext = this; // Set up the DataContext so the data binding to the WellKnownHosts list works
         }
 
@@ -27,12 +37,6 @@ namespace Networking.RFC_UI_UWP
         public List<HostService> WellKnownHosts { get; } = new List<HostService>()
         {
             new HostService("localhost", "10019"),
-            new HostService("time.nist.gov"), // NIST format is like JJJJJ YR-MO-DA HH:MM:SS TT L H msADV UTC(NIST) OTM
-            new HostService("time-a-g.nist.gov"),
-            new HostService("time-a-b.nist.gov"),
-            new HostService("time-a-wwv.nist.gov"),
-            new HostService("utcnist.colorado.edu"),
-            new HostService("utcnist2.colorado.edu"),
         };
         public class HostService
         {

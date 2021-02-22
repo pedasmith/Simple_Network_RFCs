@@ -151,13 +151,16 @@ namespace Networking.RFC_Foundational
 
         public async Task<EchoResult> CloseAsync()
         {
-            if (tcpSocket != null)
+            if (tcpDw != null)
             {
                 await tcpDw.FlushAsync();
                 tcpDw.Dispose();
+                tcpDw = null;
+            }
+            if (tcpSocket != null)
+            {
                 tcpSocket.Dispose();
                 tcpSocket = null;
-                tcpDw = null;
 
                 // Wait for the TcpReadTask to finish
                 if (TcpReadTask != null)
@@ -220,6 +223,7 @@ namespace Networking.RFC_Foundational
             }
             catch (Exception ex)
             {
+                await CloseAsync();
                 Stats.NExceptions++;
                 Log($"ERROR: Client: Writing {data} to {address} exception {ex.Message}");
                 var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
