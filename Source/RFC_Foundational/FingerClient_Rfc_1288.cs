@@ -69,13 +69,15 @@ namespace Networking.RFC_Foundational
 
         public class ClientOptions
         {
-            public enum Verbosity { None, Normal, Verbose }
-            public Verbosity LoggingLevel { get; set; } = ClientOptions.Verbosity.Normal;
-
             /// <summary>
             /// Maximum total wait time for a connection. Keep it short: good servers are generally very fast to connect.
             /// </summary>
             public int MaxConnectTimeInMilliseconds { get; set; } = 1_000;
+            
+            public enum Verbosity { None, Normal, Verbose }
+            public Verbosity LoggingLevel { get; set; } = ClientOptions.Verbosity.Normal;
+
+
         }
         public ClientOptions Options { get; internal set; } = new ClientOptions();
 
@@ -119,16 +121,18 @@ namespace Networking.RFC_Foundational
         public enum ProtocolType { Tcp, }
         public async Task<FingerResult> WriteTcpAsync(ParsedFingerCommand request)
         {
+            var address = request.SendToHost;
+            var service = request.SendToPort;
             var data = request.ToString();
             var datanice = data.Replace("\r\n", "");
             datanice = string.IsNullOrEmpty(datanice) ? "<blank string>" : datanice;
+
 
             var startTime = DateTime.UtcNow;
             try
             {
                 var tcpSocket = new StreamSocket();
-                var connectTask = tcpSocket.ConnectAsync(request.SendToHost, request.SendToPort);
-
+                var connectTask = tcpSocket.ConnectAsync(address, service);
                 var taskList = new Task[]
                 {
                         connectTask.AsTask(),
@@ -137,78 +141,76 @@ namespace Networking.RFC_Foundational
                 var waitResult = await Task.WhenAny(taskList);
                 if (waitResult == taskList[1])
                 {
+                    tcpSocket = null;
                     Stats.NExceptions++; // mark it as an exception -- it would have failed if we didn't time out
-                    Log($"TIMEOUT while connecting to {request.SendToHost} {request.SendToPort}");
+                    Log($"TIMEOUT while connecting to {address} {service}");
                     Log($"Unable to send command {datanice}\n");
 
                     var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
                     return FingerResult.MakeFailed(SocketErrorStatus.ConnectionTimedOut, faildelta);
                 }
-                else
+                // Connect is OK
+                if (!string.IsNullOrEmpty(data))
                 {
-                    // Connect is OK
-                    if (!string.IsNullOrEmpty(data))
-                    {
-                        var dw = new DataWriter(tcpSocket.OutputStream);
-                        dw.WriteString(data);
-                        await dw.StoreAsync();
-                        Log(ClientOptions.Verbosity.Normal, $"Finger sending command {datanice}\n");
-                    }
-                    Stats.NWrites++;
+                    var dw = new DataWriter(tcpSocket.OutputStream);
+                    dw.WriteString(data);
+                    await dw.StoreAsync();
+                    Log(ClientOptions.Verbosity.Normal, $"Finger sending command {datanice}\n");
+                }
+                Stats.NWrites++;
 
-                    // Now read everything
-                    var s = tcpSocket.InputStream;
-                    var buffer = new Windows.Storage.Streams.Buffer(1024*64); // read in lots of the data
+                // Now read everything
+                var s = tcpSocket.InputStream;
+                var buffer = new Windows.Storage.Streams.Buffer(1024 * 64); // read in lots of the data
 
-                    string stringresult = "";
-                    var keepGoing = true;
-                    while (keepGoing)
+                string stringresult = "";
+                var keepGoing = true;
+                while (keepGoing)
+                {
+                    try
                     {
-                        try
-                        {
-                            var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
-                            /* This is the syntax that the editor will suggest. There's a 
-                             * much simpler syntax (below) that's syntactic sugar over this.
-                            read.Progress = new AsyncOperationProgressHandler<IBuffer, uint>(
-                                (operation, progress) =>
-                                {
-                                    var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
-                                    Log(ClientOptions.Verbosity.Verbose, $"Daytime Progress count={progress} status={operation.Status} errorcode={err}");
-                                });
-                            */
-                            read.Progress = (operation, progress) =>
+                        var read = s.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
+                        /* This is the syntax that the editor will suggest. There's a 
+                         * much simpler syntax (below) that's syntactic sugar over this.
+                        read.Progress = new AsyncOperationProgressHandler<IBuffer, uint>(
+                            (operation, progress) =>
                             {
                                 var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
-                                Log(ClientOptions.Verbosity.Verbose, $"Finger Progress count={progress} status={operation.Status} errorcode={err}");
-                            };
-                            var result = await read;
-                            if (result.Length != 0)
-                            {
-                                var options = BufferToString.ToStringOptions.ProcessCrLf | BufferToString.ToStringOptions.ProcessTab;
-                                var partialresult = BufferToString.ToString(result, options);
-                                stringresult += partialresult;
-                                Log($"{partialresult}"); // This will be printed on the user's screen.
-                            }
-                            else
-                            {
-                                keepGoing = false;
-                                Log(ClientOptions.Verbosity.Verbose, $"Read completed with zero bytes; closing");
-                            }
+                                Log(ClientOptions.Verbosity.Verbose, $"Daytime Progress count={progress} status={operation.Status} errorcode={err}");
+                            });
+                        */
+                        read.Progress = (operation, progress) =>
+                        {
+                            var err = operation.ErrorCode == null ? "null" : operation.ErrorCode.ToString();
+                            Log(ClientOptions.Verbosity.Verbose, $"Finger Progress count={progress} status={operation.Status} errorcode={err}");
+                        };
+                        var result = await read;
+                        if (result.Length != 0)
+                        {
+                            var options = BufferToString.ToStringOptions.ProcessCrLf | BufferToString.ToStringOptions.ProcessTab;
+                            var partialresult = BufferToString.ToString(result, options);
+                            stringresult += partialresult;
+                            Log($"{partialresult}"); // This will be printed on the user's screen.
                         }
-                        catch (Exception ex2)
+                        else
                         {
                             keepGoing = false;
-                            Stats.NExceptions++;
-                            Log($"EXCEPTION while reading: {ex2.Message} {ex2.HResult:X}");
-
-                            var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
-                            return FingerResult.MakeFailed(ex2, faildelta);
+                            Log(ClientOptions.Verbosity.Verbose, $"Read completed with zero bytes; closing");
                         }
                     }
+                    catch (Exception ex2)
+                    {
+                        keepGoing = false;
+                        Stats.NExceptions++;
+                        Log($"EXCEPTION while reading: {ex2.Message} {ex2.HResult:X}");
 
-                    var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
-                    return FingerResult.MakeSucceeded(stringresult, delta);
+                        var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
+                        return FingerResult.MakeFailed(ex2, faildelta);
+                    }
                 }
+
+                var delta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
+                return FingerResult.MakeSucceeded(stringresult, delta);
             }
             catch (Exception ex)
             {

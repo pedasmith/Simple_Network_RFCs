@@ -62,6 +62,11 @@ namespace Networking.RFC_Foundational
         public class ClientOptions
         {
             /// <summary>
+            /// Maximum total wait time for a connection. Keep it short: good servers are generally very fast to connect.
+            /// </summary>
+            public int MaxConnectTimeInMilliseconds { get; set; } = 1_000;
+
+            /// <summary>
             /// Maximum total wait time for an answer
             /// </summary>
             public int MaxWaitInMilliseconds { get; set; } = 10_000;
@@ -132,7 +137,23 @@ namespace Networking.RFC_Foundational
             try
             {
                 var tcpSocket = new StreamSocket();
-                await tcpSocket.ConnectAsync(address, service);
+                var connectTask = tcpSocket.ConnectAsync(address, service);
+                var taskList = new Task[]
+                {
+                        connectTask.AsTask(),
+                        Task.Delay (Options.MaxConnectTimeInMilliseconds)
+                };
+                var waitResult = await Task.WhenAny(taskList);
+                if (waitResult == taskList[1])
+                {
+                    tcpSocket = null;
+                    Stats.NExceptions++; // mark it as an exception -- it would have failed if we didn't time out
+                    Log($"TIMEOUT while connecting to {address} {service}");
+
+                    var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
+                    return DaytimeResult.MakeFailed(SocketErrorStatus.ConnectionTimedOut, faildelta);
+                }
+
                 // Everything that's sent will be ignored.
                 if (!string.IsNullOrEmpty(data))
                 {

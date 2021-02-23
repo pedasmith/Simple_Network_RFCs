@@ -31,8 +31,6 @@ namespace Networking.RFC_UI_UWP
         /// <summary>
         /// TODO: correct list. Are there any public chargen servers?
         /// List of well know hosts/services that the user can try. These aren't guaranteed to work!
-        /// As of 2019-12-14, the TCP services seem to work but not the UDP ones.
-        /// See https://www.nist.gov/pml/time-and-frequency-division/services/internet-time-service-its for servers
         /// </summary>
         public List<HostService> WellKnownHosts { get; } = new List<HostService>()
         {

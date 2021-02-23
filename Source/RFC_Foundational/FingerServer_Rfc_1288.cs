@@ -25,7 +25,7 @@ namespace Networking.RFC_Foundational
     }
 
     /// <summary>
-    /// Default implementation of the server handler. Just dumps out default information.
+    /// Default implementation of the server handler. Just returns (eventually to the client) some default strings.
     /// </summary>
     public class SimpleFingerServerHandler : IFingerServerHandler
     {

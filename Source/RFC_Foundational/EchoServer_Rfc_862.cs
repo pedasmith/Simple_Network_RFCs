@@ -23,7 +23,7 @@ namespace Networking.RFC_Foundational
             public string Service { get; set; } = "10007";
 
             /// <summary>
-            /// The RFC compatible service.
+            /// The RFC compatible service (port 7).
             /// </summary>
             public static string RfcService = "7";
             /// <summary>

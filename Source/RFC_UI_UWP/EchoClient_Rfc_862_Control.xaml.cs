@@ -1,5 +1,6 @@
 ﻿using Networking.RFC_Foundational;
 using System;
+using System.Collections.Generic;
 using Windows.Networking;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -13,6 +14,40 @@ namespace Networking.RFC_UI_UWP
         public EchoClient_Rfc_862_Control()
         {
             this.InitializeComponent();
+
+            var serviceList = LittleTcpService_Rfc_848.ServiceList;
+            foreach (var serviceItem in serviceList)
+            {
+                if (serviceItem.ServiceName == "echo")
+                {
+                    WellKnownHosts.Add(new HostService(serviceItem.HostAddress.CanonicalName, serviceItem.Service));
+                }
+            }
+
+            this.DataContext = this; // Set up the DataContext so the data binding to the WellKnownHosts list works
+        }
+
+        /// <summary>
+        /// TODO: correct list. Are there any public echo servers?
+        /// List of well know hosts/services that the user can try. These aren't guaranteed to work!
+        /// </summary>
+        public List<HostService> WellKnownHosts { get; } = new List<HostService>()
+        {
+            new HostService("localhost", "10007"),
+        };
+        public class HostService
+        {
+            public HostService(string host, string service = null)
+            {
+                Host = host;
+                if (service != null) Service = service;
+            }
+            public string Host { get; set; } = "example.com";
+            public string Service { get; set; } = EchoServer_Rfc_862.ServerOptions.RfcService;
+            public override string ToString()
+            {
+                return Host;
+            }
         }
 
         EchoClient_Rfc_862 client;
@@ -60,5 +95,13 @@ namespace Networking.RFC_UI_UWP
             client = null;
         }
 
+        private void OnHostsListSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Count != 1) return;
+            var item = e.AddedItems[0] as HostService;
+            if (item == null) return;
+            uiAddress.Text = item.Host;
+            uiService.Text = item.Service;
+        }
     }
 }
