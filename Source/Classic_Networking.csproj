@@ -142,6 +142,10 @@
     <Compile Include="RFC_Foundational_Tests\CharGenTest_Rfc_864.cs" />
     <Compile Include="RFC_Foundational_Tests\DaytimeTest_Rfc_867.cs" />
     <Compile Include="RFC_Foundational_Tests\EchoTest_Rfc_862.cs" />
+    <Compile Include="RFC_PortScan\ClientOptionFactory.cs" />
+    <Compile Include="RFC_PortScan\GenerateHostName.cs" />
+    <Compile Include="RFC_PortScan\PortScan.cs" />
+    <Compile Include="RFC_PortScan\PortScanOptions.cs" />
     <Compile Include="RFC_UI_UWP\FingerServer_Rfc_1288_Control.xaml.cs">
       <DependentUpon>FingerServer_Rfc_1288_Control.xaml</DependentUpon>
     </Compile>

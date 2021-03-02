@@ -127,7 +127,7 @@ namespace Networking.RFC_Foundational
             catch (Exception e)
             {
                 Stats.NExceptions++;
-                Log($"ERROR: unable to start TCP server {e.Message}");
+                Log($"ERROR: server is unable to start TCP server {e.Message}");
                 retval = false;
             }
 
@@ -143,7 +143,7 @@ namespace Networking.RFC_Foundational
             catch (Exception e)
             {
                 Stats.NExceptions++;
-                Log($"ERROR: unable to start UDP server {e.Message}");
+                Log($"ERROR: server is unable to start UDP server {e.Message}");
                 retval = false;
             }
 
@@ -223,7 +223,7 @@ namespace Networking.RFC_Foundational
                 {
                     Stats.NExceptions++;
                     readOk = false;
-                    Log($"EXCEPTION while reading: {ex2.Message} {ex2.HResult:X}");
+                    Log($"EXCEPTION in server while reading: {ex2.Message} {ex2.HResult:X}");
                 }
             }
         }
@@ -251,7 +251,7 @@ namespace Networking.RFC_Foundational
                 {
                     Stats.NExceptions++;
                     writeOk = false;
-                    Log($"EXCEPTION while writing: {ex2.Message} {ex2.HResult:X}");
+                    Log($"EXCEPTION in server while writing: {ex2.Message} {ex2.HResult:X}");
                 }
                 if (!ct.IsCancellationRequested)
                 {
@@ -265,7 +265,7 @@ namespace Networking.RFC_Foundational
                     {
                         if ((uint)ex.HResult != 0x8013153B)
                         {
-                            Log($"EXCEPTION while delay-writing: {ex.Message} {ex.HResult:X}");
+                            Log($"EXCEPTION in server while delay-writing: {ex.Message} {ex.HResult:X}");
                         }
                     }
                 }

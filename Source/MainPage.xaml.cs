@@ -1,5 +1,6 @@
 ﻿using Networking.RFC_Foundational;
 using Networking.RFC_Foundational_Tests;
+using Networking.RFC_PortScan;
 using Networking.RFC_UI_UWP;
 using Networking.Simplest_Possible_Versions;
 using System;
@@ -157,11 +158,55 @@ namespace Networking
         }
 
         private async Task<int> DoFullTest()
-        { 
+        {
             int nerror = 0;
 
             Infrastructure.LogError += LogTestError;
             Infrastructure.LogMessage += LogTestMessage;
+
+            //
+            // Tests for each protocol.
+            //
+            uiSystemTestResults.Text += "CharGenTest_Rfc_864.Test: ";
+            Infrastructure.NError = 0;
+            await CharGenTest_Rfc_864.Test();
+            nerror += Infrastructure.NError;
+            uiSystemTestResults.Text += $" {nerror}\n";
+
+
+
+            uiSystemTestResults.Text += $"\n\n\nTotal errors: {nerror}";
+            Infrastructure.LogError -= LogTestError;
+            Infrastructure.LogMessage -= LogTestMessage;
+
+            return nerror;
+        }
+
+
+        private async Task<int> ZZZDoFullTest()
+        {
+            int nerror = 0;
+
+            Infrastructure.LogError += LogTestError;
+            Infrastructure.LogMessage += LogTestMessage;
+
+            uiSystemTestResults.Text += "GenerateHostName: start test";
+            var options = new HostNameOptions();
+            var state = new HostNameGeneratorState();
+            for (int i = 0; i < 100; i++)
+            {
+                try
+                {
+                    var hn = GenerateHostName.Generate(options, ref state);
+                }
+                catch (Exception e)
+                {
+                    uiSystemTestResults.Text += $" Exception generating host name: {e.Message}\n";
+                    nerror++;
+                }
+            }
+            uiSystemTestResults.Text += $" {nerror}\n";
+
 
 
             uiSystemTestResults.Text += "Simplest_Daytime_Sample_Rfc_867.RunAsync: ";
@@ -218,6 +263,11 @@ namespace Networking
         {
             var uri = new Uri("finger://coke@cs.cmu.edu");
             var success = await Windows.System.Launcher.LaunchUriAsync(uri);
+        }
+
+        private void OnSystemTestClear(object sender, RoutedEventArgs e)
+        {
+            uiSystemTestResults.Text = "";
         }
     }
 }

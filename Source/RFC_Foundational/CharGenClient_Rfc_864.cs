@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Networking;
 using Windows.Networking.Sockets;
@@ -164,11 +165,25 @@ namespace Networking.RFC_Foundational
             }
             if (tcpSocket != null)
             {
+                if (TcpCancellationTokenSource != null)
+                {
+                    Log($"Character Generator: CLIENT: About to cancel... TODO remove this message....");
+                    TcpCancellationTokenSource.Cancel();
+                }
+                // // // TODO: this will Throw an exception???
+                try
+                {
+                    await tcpSocket.CancelIOAsync(); //TODO: cancel the read (if any)
+                }
+                catch(Exception cancelEx)
+                {
+                    Log($"Character Generator: CLIENT: EXCEPTION: unable to cancel IO {cancelEx.Message}");
+                }
                 tcpSocket.Dispose();
                 tcpSocket = null;
 
                 // Wait for the TcpReadTask to finish
-                if (TcpReadTask != null)
+                if (TcpReadTask != null && !TcpReadTask.IsCompleted)
                 {
                     await TcpReadTask;
                 }
@@ -183,6 +198,7 @@ namespace Networking.RFC_Foundational
 
         Task TcpReadTask = null;
         CharGenResult TcpReadEchoResult = null;
+        CancellationTokenSource TcpCancellationTokenSource = null;
         DateTime SocketStartTime;
 
         public enum ProtocolType { Tcp, Udp }
@@ -202,37 +218,36 @@ namespace Networking.RFC_Foundational
             var startTime = DateTime.UtcNow;
             try
             {
-                if (tcpSocket == null)
+                TcpCancellationTokenSource = new CancellationTokenSource();
+                tcpSocket = new StreamSocket();
+                var connectTask = tcpSocket.ConnectAsync(address, service);
+                var taskList = new Task[]
                 {
-                    tcpSocket = new StreamSocket();
-                    var connectTask = tcpSocket.ConnectAsync(address, service);
-                    var taskList = new Task[]
-                    {
                         connectTask.AsTask(),
                         Task.Delay (Options.MaxConnectTimeInMilliseconds)
-                    };
-                    var waitResult = await Task.WhenAny(taskList);
-                    if (waitResult == taskList[1])
-                    {
-                        tcpSocket = null;
-                        Stats.NExceptions++; // mark it as an exception -- it would have failed if we didn't time out
-                        Log($"TIMEOUT while connecting to {address} {service}");
+                };
+                var waitResult = await Task.WhenAny(taskList);
+                if (waitResult == taskList[1])
+                {
+                    tcpSocket = null;
+                    Stats.NExceptions++; // mark it as an exception -- it would have failed if we didn't time out
+                    Log($"TIMEOUT while connecting to {address} {service}");
 
-                        var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
-                        return CharGenResult.MakeFailed(SocketErrorStatus.ConnectionTimedOut, faildelta);
-                    }
-
-
-                    Log(ClientOptions.Verbosity.Verbose, $"CLIENT: TCP Connection using local port {tcpSocket.Information.LocalPort}");
-                    tcpDw = new DataWriter(tcpSocket.OutputStream);
-                    SocketStartTime = startTime;
-
-                    // Now read everything
-                    TcpReadEchoResult = CharGenResult.MakeInProgress(0); // Taken no time at all so far :-)
-                    var dr = new DataReader(tcpSocket.InputStream);
-                    dr.InputStreamOptions = InputStreamOptions.Partial;
-                    TcpReadTask = ReadTcpAsync(dr);
+                    var faildelta = DateTime.UtcNow.Subtract(startTime).TotalSeconds;
+                    return CharGenResult.MakeFailed(SocketErrorStatus.ConnectionTimedOut, faildelta);
                 }
+
+
+                Log(ClientOptions.Verbosity.Verbose, $"CLIENT: TCP Connection using local port {tcpSocket.Information.LocalPort}");
+                tcpDw = new DataWriter(tcpSocket.OutputStream);
+                SocketStartTime = startTime;
+
+                // Now read everything
+                TcpReadEchoResult = CharGenResult.MakeInProgress(0); // Taken no time at all so far :-)
+                var dr = new DataReader(tcpSocket.InputStream);
+                dr.InputStreamOptions = InputStreamOptions.Partial;
+                TcpReadTask = ReadTcpAsync(dr, TcpCancellationTokenSource.Token);
+
                 tcpDw.WriteString(data);
                 await tcpDw.StoreAsync();
                 Stats.NWrites++;
@@ -354,7 +369,7 @@ namespace Networking.RFC_Foundational
             catch (Exception ex)
             {
                 // This can happen when we send a packet to a correct host (like localhost) but with an
-                // incorrect service. The packet will "bounce", resuluting in a MessageReceived event
+                // incorrect service. The packet will "bounce", resuluting in a MessageReceived event TODO: resuluting is spelled wrong
                 // but with an args with no real data.
                 Stats.NExceptions++;
                 var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
@@ -382,14 +397,16 @@ namespace Networking.RFC_Foundational
             }
         }
 
-        private async Task ReadTcpAsync(DataReader dr)
+        private async Task ReadTcpAsync(DataReader dr, CancellationToken ct)
         {
             try
             {
                 uint count = 0;
                 do
                 {
-                    await dr.LoadAsync(2048); // Will throw 'thread exit or app request' when the socket is Disposed
+                    Log($"Character Generator: CLIENT: FYI: about to try reading! TODO: remove this message....");
+
+                    await dr.LoadAsync(2048).AsTask(ct); // Will throw 'thread exit or app request' when the socket is Disposed
                     count = dr.UnconsumedBufferLength;
                     if (count > 0)
                     {
@@ -409,7 +426,14 @@ namespace Networking.RFC_Foundational
             catch (Exception ex)
             {
                 Stats.NExceptions++;
-                Log($"Character Generator: CLIENT: Exception {ex.Message}");
+                if (ct.IsCancellationRequested)
+                {
+                    Log($"Character Generator: CLIENT: cancellation with exception {ex.Message}");
+                }
+                else
+                {
+                    Log($"Character Generator: CLIENT: Exception {ex.Message}");
+                }
             }
             var delta = DateTime.UtcNow.Subtract(SocketStartTime).TotalSeconds;
             TcpReadEchoResult.TimeInSeconds = delta;

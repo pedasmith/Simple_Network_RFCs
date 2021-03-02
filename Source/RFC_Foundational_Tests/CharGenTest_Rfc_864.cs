@@ -21,6 +21,9 @@ namespace Networking.RFC_Foundational_Tests
 
                 await testObject.Test_CharGen_Simplest();
                 await testObject.Test_CharGen_Good_Path_Tcp();
+
+#if NEVER_EVER_DEFINED
+//TODO: reenable all these tests
                 await testObject.Test_CharGen_Good_Path_Udp();
 
                 var protocol = CharGenClient_Rfc_864.ProtocolType.Tcp;
@@ -32,13 +35,13 @@ namespace Networking.RFC_Foundational_Tests
                 await testObject.Test_Bad_Host(protocol); // Will print an exception for bad host.
                 await testObject.Test_Bad_Service(protocol); // Will print an exception for connection refused.
                 await testObject.Test_Stress(protocol);
-
+#endif
 
             }
             catch (Exception ex)
             {
                 // There should be absolutely no exceptions thrown by the tests.
-                Infrastructure.Error($"Uncaught exception thrown in tests {ex.Message} hresult {ex.HResult:X}");
+                Infrastructure.Error($"CharGen Test: Error: uncaught exception thrown in tests {ex.Message} hresult {ex.HResult:X}");
             }
             var delta = DateTimeOffset.UtcNow.Subtract(start).TotalSeconds;
             Infrastructure.Log($"Ending test: CharGenTest_Rfc_864  time={delta} seconds");
